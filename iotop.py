@@ -3,6 +3,8 @@
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@yahoo.fr>, GPLv2
 # See ./iotop.py --help for some help
 
+# 20070723: Added support for taskstats version > 4
+
 import curses
 import errno
 import optparse
@@ -223,13 +225,14 @@ class TaskStatsNetlink(object):
                 # OSError: Netlink error: No such process (3)
                 return
             raise
-        if len(reply.payload) != 292:
-            return
+        assert len(reply.payload) >= 292
         reply_data = reply.payload[20:]
 
         reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
         reply_version = struct.unpack('H', reply.payload[20:22])[0]
-        assert (reply_length, reply_type, reply_version) == (288, attr + 3, 4)
+        assert reply_length >= 288
+        assert reply_type == attr + 3
+        assert reply_version >= 4
 
         res = {}
         for name, offset in TaskStatsNetlink.members_offsets:
