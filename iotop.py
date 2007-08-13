@@ -4,6 +4,7 @@
 # See ./iotop.py --help for some help
 
 # 20070723: Added support for taskstats version > 4
+# 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
 
 import curses
 import errno
@@ -225,7 +226,9 @@ class TaskStatsNetlink(object):
                 # OSError: Netlink error: No such process (3)
                 return
             raise
-        assert len(reply.payload) >= 292
+        if len(reply.payload) < 292:
+            # Short reply
+            return
         reply_data = reply.payload[20:]
 
         reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
@@ -387,10 +390,10 @@ def human_bandwidth(size, duration):
     for i in xrange(len(UNITS) - 1, 0, -1):
         base = 1 << (10 * i)
         if 2 * base < size:
-            res = '%.2f %s' % ((float(size) / base), UNITS[i])
+            res = '%.2f %s' % ((float(bw) / base), UNITS[i])
             break
     else:
-        res = str(size) + ' ' + UNITS[0]
+        res = str(bw) + ' ' + UNITS[0]
     return res + '/s'
 
 def human_stats(stats):
