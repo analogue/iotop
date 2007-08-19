@@ -5,7 +5,7 @@
 
 # 20070723: Added support for taskstats version > 4
 # 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
-# 20070819: Fix "-P -p NOT_A_TGID", optimize -p
+# 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
 
 import curses
 import errno
@@ -346,8 +346,7 @@ class ProcessList(object):
             return []
 
     def update_process_counts(self):
-        total_read = total_write = 0
-        duration = None
+        total_read = total_write = duration = 0
         tgids = self.options.pids or [int(tgid) for tgid in os.listdir('/proc')
                                       if '0' <= tgid[0] and tgid[0] <= '9']
         for tgid in tgids:
@@ -360,7 +359,7 @@ class ProcessList(object):
                         process.add_stats(stats)
                         total_read += process.stats['read_bytes'][1]
                         total_write += process.stats['write_bytes'][1]
-                        if duration is None:
+                        if not duration:
                             duration = process.stats['ac_etime'][1] / 1000000.0
         return total_read, total_write, duration
 
@@ -383,7 +382,7 @@ class ProcessList(object):
 UNITS = ['B', 'K', 'M', 'G', 'T', 'P', 'E']
 
 def human_bandwidth(size, duration):
-    bw = float(size) / duration
+    bw = size and float(size) / duration
     for i in xrange(len(UNITS) - 1, 0, -1):
         base = 1 << (10 * i)
         if 2 * base < size:
