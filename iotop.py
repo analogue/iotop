@@ -5,6 +5,7 @@
 
 # 20070723: Added support for taskstats version > 4
 # 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
+# 20070819: Fix "-P -p NOT_A_TGID", optimize -p
 
 import curses
 import errno
@@ -277,11 +278,7 @@ class pinfo(object):
         self.parse_status('/proc/%d/status' % pid, options)
 
     def check_if_valid(self, uid, options):
-        self.valid = not options.uids and not options.pids
-        if not self.valid:
-            self.valid = uid in options.uids
-        if not self.valid:
-            self.valid = self.pid in options.pids
+        self.valid = options.pids or not options.uids or uid in options.uids
 
     def parse_status(self, path, options):
         for line in open(path):
@@ -341,7 +338,7 @@ class ProcessList(object):
         return process
 
     def list_pids(self, tgid):
-        if self.options.processes:
+        if self.options.processes or self.options.pids:
             return [tgid]
         try:
             return map(int, os.listdir('/proc/%d/task' % tgid))
@@ -351,8 +348,8 @@ class ProcessList(object):
     def update_process_counts(self):
         total_read = total_write = 0
         duration = None
-        tgids = [int(tgid) for tgid in os.listdir('/proc') if
-                                              '0' <= tgid[0] and tgid[0] <= '9']
+        tgids = self.options.pids or [int(tgid) for tgid in os.listdir('/proc')
+                                      if '0' <= tgid[0] and tgid[0] <= '9']
         for tgid in tgids:
             for pid in self.list_pids(tgid):
                 process = self.get_process(pid)
@@ -426,7 +423,7 @@ class IOTopUI(object):
         # The default sorting (by I/O % time) should show processes doing
         # only writes, without waiting on them
         (lambda p: p.stats['blkio_delay_total'][1] or
-                   int(not(not(p.stats['read_bytes'][1] or 
+                   int(not(not(p.stats['read_bytes'][1] or
                                p.stats['write_bytes'][1]))), True),
         (lambda p: p.get_cmdline(4096), False),
     ]
