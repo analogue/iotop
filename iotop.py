@@ -6,7 +6,7 @@
 # 20070723: Added support for taskstats version > 4
 # 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
 # 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
-# 20070825: More accurate cutting of the command line
+# 20070825: More accurate cutting of the command line, handle terminal resizing
 
 import curses
 import errno
@@ -440,7 +440,7 @@ class IOTopUI(object):
             curses.start_color()
             curses.curs_set(0)
 
-    def resize(self, *unused):
+    def resize(self):
         self.height, self.width = self.win.getmaxyx()
 
     def run(self):
@@ -458,7 +458,14 @@ class IOTopUI(object):
                 if iterations >= self.options.iterations:
                     break
 
-            events = poll.poll(self.options.delay_seconds * 1000.0)
+            try:
+                events = poll.poll(self.options.delay_seconds * 1000.0)
+            except select.error, e:
+                if e.args and e.args[0] == errno.EINTR:
+                    events = 0
+                else:
+                    raise
+            self.resize()
             if events:
                 key = self.win.getch()
                 self.handle_key(key)
