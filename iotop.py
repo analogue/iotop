@@ -6,6 +6,7 @@
 # 20070723: Added support for taskstats version > 4
 # 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
 # 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
+# 20070825: More accurate cutting of the command line
 
 import curses
 import errno
@@ -301,13 +302,13 @@ class pinfo(object):
             prev_value = self.stats[name][0]
             self.stats[name] = (value, value - prev_value)
 
-    def get_cmdline(self, max_length):
+    def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
         try:
             proc_cmdline = open('/proc/%d/cmdline' % self.pid)
         except IOError:
             return '{no such process}'
-        cmdline = proc_cmdline.read(max_length)
+        cmdline = proc_cmdline.read(4096)
         parts = cmdline.split('\0')
         first_command_char = parts[0].rfind('/') + 1
         parts[0] = parts[0][first_command_char:]
@@ -424,7 +425,7 @@ class IOTopUI(object):
         (lambda p: p.stats['blkio_delay_total'][1] or
                    int(not(not(p.stats['read_bytes'][1] or
                                p.stats['write_bytes'][1]))), True),
-        (lambda p: p.get_cmdline(4096), False),
+        (lambda p: p.get_cmdline(), False),
     ]
 
     def __init__(self, win, process_list, options):
@@ -497,16 +498,18 @@ class IOTopUI(object):
         action()
 
     def get_data(self):
-        if self.options.batch:
-            max_length = 4096
-        else:
-            max_length = self.width
         def format(p):
             stats = human_stats(p.stats)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
-            return '%5d %-8s %11s %11s %7s %7s %s' % \
-                   (p.pid, p.user[:8], read_bytes, write_bytes, swapin_delay,
-                    io_delay, p.get_cmdline(max_length))
+            line = '%5d %-8s %11s %11s %7s %7s ' % (p.pid, p.user[:8],
+                                read_bytes, write_bytes, swapin_delay, io_delay)
+            if self.options.batch:
+                max_cmdline_length = 4096
+            else:
+                max_cmdline_length = self.width - len(line)
+            line += p.get_cmdline()[:max_cmdline_length]
+            return line
+
         processes = self.process_list.processes.values()
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         processes.sort(key=key, reverse=self.sorting_reverse)
