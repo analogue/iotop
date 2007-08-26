@@ -7,6 +7,7 @@
 # 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
 # 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
 # 20070825: More accurate cutting of the command line, handle terminal resizing
+# 20070826: Document taskstats bug: http://lkml.org/lkml/2007/8/2/185
 
 import curses
 import errno
@@ -398,6 +399,8 @@ def human_stats(stats):
     # IOTopUI.get_data(self)
     duration = stats['ac_etime'][1] / 1000000.0
     def delay2percent(name): # delay in ns, duration in s
+        if not duration:
+            return 'KERNBUG'
         return '%.2f %%' % min(99.99, stats[name][1] / (duration * 10000000.0))
     io_delay = delay2percent('blkio_delay_total')
     swapin_delay = delay2percent('swapin_delay_total')
