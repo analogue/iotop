@@ -8,6 +8,7 @@
 # 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
 # 20070825: More accurate cutting of the command line, handle terminal resizing
 # 20070826: Document taskstats bug: http://lkml.org/lkml/2007/8/2/185
+# 20070930: Fixed -b
 
 import curses
 import errno
@@ -468,7 +469,8 @@ class IOTopUI(object):
                     events = 0
                 else:
                     raise
-            self.resize()
+            if not self.options.batch:
+                self.resize()
             if events:
                 key = self.win.getch()
                 self.handle_key(key)
