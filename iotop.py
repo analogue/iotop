@@ -9,6 +9,7 @@
 # 20070825: More accurate cutting of the command line, handle terminal resizing
 # 20070826: Document taskstats bug: http://lkml.org/lkml/2007/8/2/185
 # 20070930: Fixed -b
+# 20071219: Tolerate misconfigured terminals
 
 import curses
 import errno
@@ -442,7 +443,12 @@ class IOTopUI(object):
             self.resize()
             curses.use_default_colors()
             curses.start_color()
-            curses.curs_set(0)
+            try:
+                curses.curs_set(0)
+            except curses.error:
+                # This call can fail with misconfigured terminals, for example
+                # TERM=xterm-color. This is harmless
+                pass
 
     def resize(self):
         self.height, self.width = self.win.getmaxyx()
