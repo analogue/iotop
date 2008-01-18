@@ -574,7 +574,7 @@ def run_iotop(win, options):
 # Main program
 #
 
-VERSION = '0.1'
+VERSION = '0.2'
 
 USAGE = 'Usage: %s [OPTIONS]' % sys.argv[0] + '''
 
