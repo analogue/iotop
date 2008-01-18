@@ -579,7 +579,7 @@ USAGE = 'Usage: %s [OPTIONS]' % sys.argv[0] + '''
 DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling
 period. SWAPIN and IO are the percentages of time the thread spent respectively
 while swapping in and waiting on I/O more generally.
-Controls: left and right arrows to should the sorting column, r to invert the
+Controls: left and right arrows to show the sorting column, r to invert the
 sorting order, q to quit, any other key to force a refresh'''
 
 def main():
