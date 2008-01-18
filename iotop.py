@@ -3,14 +3,6 @@
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@yahoo.fr>, GPLv2
 # See ./iotop.py --help for some help
 
-# 20070723: Added support for taskstats version > 4
-# 20070813: Handle short replies, and fix bandwidth calculation when delay != 1s
-# 20070819: Fix "-P -p NOT_A_TGID", optimize -p, handle empty process list
-# 20070825: More accurate cutting of the command line, handle terminal resizing
-# 20070826: Document taskstats bug: http://lkml.org/lkml/2007/8/2/185
-# 20070930: Fixed -b
-# 20071219: Tolerate misconfigured terminals
-
 import curses
 import errno
 import optparse
