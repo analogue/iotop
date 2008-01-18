@@ -199,7 +199,7 @@ TASKSTATS_CMD_ATTR_PID = 1
 TASKSTATS_CMD_ATTR_TGID = 2
 
 class TaskStatsNetlink(object):
-    # Keep in sync with human_stats(stats, duration)
+    # Keep in sync with human_stats(stats, duration) and pinfo.did_some_io()
     members_offsets = [
         ('blkio_delay_total', 40),
         ('swapin_delay_total', 56),
@@ -317,6 +317,13 @@ class pinfo(object):
         parts[0] = parts[0][first_command_char:]
         cmdline = ' '.join(parts).strip()
         return cmdline.encode('string_escape') or self.name
+
+    def did_some_io(self):
+        for name in self.stats:
+            if name != 'ac_etime' and self.stats[name][1]:
+                return True
+
+        return False
 
 class ProcessList(object):
     def __init__(self, taskstats_connection, options):
@@ -528,12 +535,15 @@ class IOTopUI(object):
             line += p.get_cmdline()[:max_cmdline_length]
             return line
 
+        def should_format(p):
+            return not self.options.only or p.did_some_io()
+
         processes = self.process_list.processes.values()
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         processes.sort(key=key, reverse=self.sorting_reverse)
         if not self.options.batch:
             del processes[self.height - 2:]
-        return map(format, processes)
+        return [format(p) for p in processes if should_format(p)]
 
     def refresh_display(self, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
@@ -596,6 +606,9 @@ def main():
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes',
                       help='show only processes, not all threads')
+    parser.add_option('-o', '--only', action='store_true',
+                      dest='only',
+                      help='only show processes or threads actually doing I/O')
     parser.add_option('-n', '--iter', type='int', dest='iterations',
                       metavar='NUM',
                       help='number of iterations before ending [infinite]')
