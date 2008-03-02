@@ -305,8 +305,9 @@ class pinfo(object):
             return '{no such process}'
         cmdline = proc_cmdline.read(4096)
         parts = cmdline.split('\0')
-        first_command_char = parts[0].rfind('/') + 1
-        parts[0] = parts[0][first_command_char:]
+        if parts[0].startswith('/'):
+            first_command_char = parts[0].rfind('/') + 1
+            parts[0] = parts[0][first_command_char:]
         cmdline = ' '.join(parts).strip()
         return cmdline.encode('string_escape') or self.name
 
