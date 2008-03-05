@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # iotop: Display I/O usage of processes in a top like UI
-# Copyright (c) 2007 Guillaume Chazarain <guichaz@yahoo.fr>, GPLv2
+# Copyright (c) 2007, 2008 Guillaume Chazarain <guichaz@gmail.com>, GPLv2
 # See ./iotop.py --help for some help
 
 import curses
