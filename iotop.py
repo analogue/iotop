@@ -14,6 +14,9 @@ import struct
 import sys
 import time
 
+from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
+from genetlink import Controller, GeNlMessage
+
 #
 # Check for requirements:
 #   o Python >= 2.5 for AF_NETLINK sockets
@@ -35,152 +38,6 @@ if not python25 or not ioaccounting:
     print '- Linux >= 2.6.20 with I/O accounting support:', \
           boolean2string(ioaccounting)
     sys.exit(1)
-
-#
-# Netlink stuff
-# Based on code from pynl80211: Netlink message generation/parsing
-# http://git.sipsolutions.net/?p=pynl80211.git
-# Copyright 2007 Johannes Berg <johannes@sipsolutions.net>
-# GPLv2
-
-# flags
-NLM_F_REQUEST = 1
-
-# types
-NLMSG_ERROR = 2
-NLMSG_MIN_TYPE = 0x10
-
-class Attr:
-    def __init__(self, type, str, *kw):
-        self.type = type
-        if len(kw):
-            self.data = struct.pack(str, *kw)
-        else:
-            self.data = str
-
-    def _dump(self):
-        hdr = struct.pack('HH', len(self.data)+4, self.type)
-        length = len(self.data)
-        pad = ((length + 4 - 1) & ~3 ) - length
-        return hdr + self.data + '\0' * pad
-
-    def u16(self):
-        return struct.unpack('H', self.data)[0]
-
-class NulStrAttr(Attr):
-    def __init__(self, type, str):
-        Attr.__init__(self, type, '%dsB'%len(str), str, 0)
-
-class U32Attr(Attr):
-    def __init__(self, type, val):
-        Attr.__init__(self, type, 'L', val)
-
-NETLINK_GENERIC = 16
-
-class Message:
-    def __init__(self, tp, flags = 0, seq = -1, payload = []):
-        self.type = tp
-        self.flags = flags
-        self.seq = seq
-        self.pid = -1
-        if type(payload) == list:
-            contents = []
-            for attr in payload:
-                contents.append(attr._dump())
-            self.payload = ''.join(contents)
-        else:
-            self.payload = payload
-
-    def send(self, conn):
-        if self.seq == -1:
-            self.seq = conn.seq()
-
-        self.pid = conn.pid
-        length = len(self.payload)
-
-        hdr = struct.pack('IHHII', length + 4*4, self.type, self.flags,
-                          self.seq, self.pid)
-        conn.send(hdr + self.payload)
-
-class Connection:
-    def __init__(self, nltype, groups=0, unexpected_msg_handler = None):
-        self.fd = socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, nltype)
-        self.fd.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65536)
-        self.fd.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
-        self.fd.bind((0, groups))
-        self.pid, self.groups = self.fd.getsockname()
-        self._seq = 0
-        self.unexpected = unexpected_msg_handler
-
-    def send(self, msg):
-        self.fd.send(msg)
-
-    def recv(self):
-        cntnts = self.fd.recv(65536)
-        # should check msgflags for TRUNC!
-        len, type, flags, seq, pid = struct.unpack('IHHII', cntnts[:16])
-        m = Message(type, flags, seq, cntnts[16:])
-        m.pid = pid
-        if m.type == NLMSG_ERROR:
-            errno = -struct.unpack('i', m.payload[:4])[0]
-            if errno != 0:
-                e = OSError('Netlink error: %s (%d)' % \
-                                                    (os.strerror(errno), errno))
-                e.errno = errno
-        return m
-
-    def seq(self):
-        self._seq += 1
-        return self._seq
-
-def parse_attributes(str):
-    attrs = {}
-    while str:
-        l, tp = struct.unpack('HH', str[:4])
-        attrs[tp] = Attr(tp, str[4:l])
-        l = ((l + 4 - 1) & ~3 )
-        str = str[l:]
-    return attrs
-
-CTRL_CMD_GETFAMILY = 3
-
-CTRL_ATTR_FAMILY_ID = 1
-CTRL_ATTR_FAMILY_NAME = 2
-
-class GenlHdr:
-    def __init__(self, cmd, version = 0):
-        self.cmd = cmd
-        self.version = version
-
-    def _dump(self):
-        return struct.pack('BBxx', self.cmd, self.version)
-
-def _genl_hdr_parse(data):
-    return GenlHdr(*struct.unpack('BBxx', data))
-
-GENL_ID_CTRL = NLMSG_MIN_TYPE
-
-class GeNlMessage(Message):
-    def __init__(self, family, cmd, attrs=[], flags=0):
-        self.cmd = cmd
-        self.attrs = attrs
-        self.family = family
-        Message.__init__(self, family, flags=flags,
-                         payload=[GenlHdr(self.cmd)] + attrs)
-
-class Controller:
-    def __init__(self, conn):
-        self.conn = conn
-
-    def get_family_id(self, family):
-        a = NulStrAttr(CTRL_ATTR_FAMILY_NAME, family)
-        m = GeNlMessage(GENL_ID_CTRL, CTRL_CMD_GETFAMILY,
-                        flags=NLM_F_REQUEST, attrs=[a])
-        m.send(self.conn)
-        m = self.conn.recv()
-        gh = _genl_hdr_parse(m.payload[:4])
-        attrs = parse_attributes(m.payload[4:])
-        return attrs[CTRL_ATTR_FAMILY_ID].u16()
 
 #
 # Netlink usage for taskstats
