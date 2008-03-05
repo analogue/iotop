@@ -301,9 +301,9 @@ class pinfo(object):
         # A process may exec, so we must always reread its cmdline
         try:
             proc_cmdline = open('/proc/%d/cmdline' % self.pid)
+            cmdline = proc_cmdline.read(4096)
         except IOError:
             return '{no such process}'
-        cmdline = proc_cmdline.read(4096)
         parts = cmdline.split('\0')
         if parts[0].startswith('/'):
             first_command_char = parts[0].rfind('/') + 1
