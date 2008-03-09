@@ -1,0 +1,12 @@
+0.2
+~~~
+
+o Misconfigured terminals (TERM=xterm-color) are tolerated
+o Added the --only option to only show processes or threads actually doing I/O
+o Cosmetic fixes as well as minor bug fixes
+o Re-organized code to import vanilla pynl80211
+
+0.1
+~~~
+
+o First release
