@@ -8,6 +8,7 @@ import struct
 import sys
 
 from iotop.data import find_uids, TaskStatsNetlink, ProcessList
+from iotop.version import VERSION
 
 #
 # Utility functions for the UI
@@ -204,8 +205,6 @@ def run_iotop(win, options):
 #
 # Main program
 #
-
-VERSION = '0.2'
 
 USAGE = '''%s [OPTIONS]
 
