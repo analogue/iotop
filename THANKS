@@ -1,0 +1,10 @@
+Iain Lea <iain@bricbrac.de>
+    Reported spelling errors, suggested --only.
+
+tropikhajma@gmail.com
+    Reported cosmetic bug: strip dirname from cmdline only on absolute paths.
+
+Roland Kletzing <devzero@web.de>
+    Reported crashing bug: successfully opening /proc/PID/cmdline does not imply
+we can read it (PID died between open() and read()).
+
