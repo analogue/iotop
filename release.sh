@@ -19,4 +19,3 @@ cd "$PACKAGE-$VERSION"
 ./setup.py bdist_rpm
 mv "dist/$PACKAGE-$VERSION-1."{noarch,src}.rpm "$DIR/dist"
 rm -fr "$TEMPDIR"
-
