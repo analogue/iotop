@@ -5,10 +5,15 @@
 
 import sys
 
-from iotop.ui import main
-
 try:
-    main()
-except KeyboardInterrupt:
-    pass
-sys.exit(0)
+    from iotop.ui import main
+except ImportError, e:
+    print e
+    print 'To run an uninstalled copy of iotop,'
+    print 'launch iotop.py in the top directory'
+else:
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
+    sys.exit(0)
