@@ -124,6 +124,8 @@ class IOTopUI(object):
             self.sorting_reverse = IOTopUI.sorting_keys[self.sorting_key][1]
 
     def handle_key(self, key):
+        def toggle_only_io():
+            self.options.only ^= True
         key_bindings = {
             ord('q'):
                 lambda: sys.exit(0),
@@ -133,6 +135,8 @@ class IOTopUI(object):
                 lambda: self.reverse_sorting(),
             ord('R'):
                 lambda: self.reverse_sorting(),
+            ord('o'):
+                toggle_only_io,
             curses.KEY_LEFT:
                 lambda: self.adjust_sorting_key(-1),
             curses.KEY_RIGHT:
@@ -229,7 +233,7 @@ def main():
                       dest='processes',
                       help='show only processes, not all threads')
     parser.add_option('-o', '--only', action='store_true',
-                      dest='only',
+                      dest='only', default=False,
                       help='only show processes or threads actually doing I/O')
     parser.add_option('-n', '--iter', type='int', dest='iterations',
                       metavar='NUM',
