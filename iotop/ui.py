@@ -217,7 +217,8 @@ DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling
 period. SWAPIN and IO are the percentages of time the thread spent respectively
 while swapping in and waiting on I/O more generally.
 Controls: left and right arrows to change the sorting column, r to invert the
-sorting order, q to quit, any other key to force a refresh''' % sys.argv[0]
+sorting order, o to toggle the --only option, q to quit, any other key to force
+a refresh''' % sys.argv[0]
 
 def main():
     parser = optparse.OptionParser(usage=USAGE, version='iotop ' + VERSION)
