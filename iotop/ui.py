@@ -232,7 +232,7 @@ def main():
                       help='non-interactive mode')
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes',
-                      help='show only processes, not all threads')
+                      help='only show processes, not all threads')
     parser.add_option('-o', '--only', action='store_true',
                       dest='only', default=False,
                       help='only show processes or threads actually doing I/O')
