@@ -167,11 +167,12 @@ class IOTopUI(object):
             return not self.options.only or p.did_some_io()
 
         processes = self.process_list.processes.values()
+        processes = filter(should_format, processes)
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         processes.sort(key=key, reverse=self.sorting_reverse)
         if not self.options.batch:
             del processes[self.height - 2:]
-        return [format(p) for p in processes if should_format(p)]
+        return map(format, processes)
 
     def refresh_display(self, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
