@@ -220,6 +220,14 @@ a refresh''' % sys.argv[0]
 
 def main():
     parser = optparse.OptionParser(usage=USAGE, version='iotop ' + VERSION)
+    parser.add_option('-o', '--only', action='store_true',
+                      dest='only', default=False,
+                      help='only show processes or threads actually doing I/O')
+    parser.add_option('-b', '--batch', action='store_true', dest='batch',
+                      help='non-interactive mode')
+    parser.add_option('-n', '--iter', type='int', dest='iterations',
+                      metavar='NUM',
+                      help='number of iterations before ending [infinite]')
     parser.add_option('-d', '--delay', type='float', dest='delay_seconds',
                       help='delay between iterations [1 second]',
                       metavar='SEC', default=1)
@@ -227,17 +235,9 @@ def main():
                       help='processes to monitor [all]', metavar='PID')
     parser.add_option('-u', '--user', type='str', dest='users', action='append',
                       help='users to monitor [all]', metavar='USER')
-    parser.add_option('-b', '--batch', action='store_true', dest='batch',
-                      help='non-interactive mode')
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes',
                       help='only show processes, not all threads')
-    parser.add_option('-o', '--only', action='store_true',
-                      dest='only', default=False,
-                      help='only show processes or threads actually doing I/O')
-    parser.add_option('-n', '--iter', type='int', dest='iterations',
-                      metavar='NUM',
-                      help='number of iterations before ending [infinite]')
     options, args = parser.parse_args()
     if args:
         parser.error('Unexpected arguments: ' + ' '.join(args))
