@@ -16,6 +16,7 @@ process is the I/O going on.''',
       author_email='guichaz@gmail.com',
       url='http://guichaz.free.fr/iotop',
       scripts=['bin/iotop'],
+      data_files=[('share/man/man1', ['iotop.1'])],
       packages=find_packages(),
       include_package_data=True,
       license='GPL'
