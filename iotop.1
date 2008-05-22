@@ -1,0 +1,59 @@
+.\" Debian manual page, has been forwarded upstream
+.TH IOTOP "1" "May 2008"
+.SH NAME
+iotop \- simple top\-like I/O monitor
+.SH SYNOPSIS
+.B iotop
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+iotop watches I/O usage information output by the Linux kernel (requires
+2.6.20 or later) and displays a table of current I/O usage by processes
+or threads on the system. At least the CONFIG_TASKSTATS and CONFIG_TASK_IO_ACCOUNTING
+options need to be enabled in your Linux kernel build configuration.
+.PP
+iotop displays columns for the I/O bandwidth read and written by each
+process/thread during the sampling period. It also displays the percentage
+of time the thread/process spent while swapping in and while waiting on I/O.
+In addition the total I/O bandwidth read and written during the sampling
+period is displayed at the top of the interface.
+.PP
+Use the left and right arrows to change the sorting, r to reverse the
+sorting order, o to toggle the --only option or q to quit. Any other key will force a refresh.
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+Show the version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show usage information and exit
+.TP
+\fB\-o\fR, \fB\-\-only\fR
+Only show processes or threads actually doing I/O, instead of showing all processes or threads. This can be dynamically toggled by pressing o.
+.TP
+\fB\-b\fR, \fB\-\-batch\fR
+Turn on non\-interactive mode.
+Useful for logging I/O usage over time.
+.TP
+\fB\-n\fR NUM, \fB\-\-iter\fR=\fINUM\fR
+Set the number of iterations before quitting (never quit by default).
+This is most useful in non\-interactive mode.
+.TP
+\fB\-d\fR SEC, \fB\-\-delay\fR=\fISEC\fR
+Set the delay between iterations in seconds (1 second by default).
+Accepts non-integer values such as 1.1 seconds.
+.TP
+\fB\-p\fR PID, \fB\-\-pid\fR=\fIPID\fR
+A list of processes to monitor (all by default).
+.TP
+\fB\-u\fR USER, \fB\-\-user\fR=\fIUSER\fR
+A list of users to monitor (all by default)
+.TP
+\fB\-P\fR, \fB\-\-processes\fR
+Only show processes. Normally iotop shows all threads.
+.SH SEE ALSO
+.BR top (1)
+.SH AUTHOR
+iotop was written by Guillaume Chazarain.
+.PP
+This manual page was started by Paul Wise for the
+Debian project and is placed in the public domain.
