@@ -44,7 +44,6 @@ class TaskStatsNetlink(object):
     members_offsets = [
         ('blkio_delay_total', 40),
         ('swapin_delay_total', 56),
-        ('ac_etime', 144),
         ('read_bytes', 248),
         ('write_bytes', 256),
         ('cancelled_write_bytes', 264)
@@ -162,7 +161,7 @@ class pinfo(object):
 
     def did_some_io(self):
         for name in self.stats:
-            if name != 'ac_etime' and self.stats[name][1]:
+            if self.stats[name][1]:
                 return True
 
         return False
@@ -173,6 +172,7 @@ class ProcessList(object):
         self.processes = {}
         self.taskstats_connection = taskstats_connection
         self.options = options
+        self.timestamp = time.time()
 
         # A first time as we are interested in the delta
         self.update_process_counts()
@@ -199,7 +199,10 @@ class ProcessList(object):
             return []
 
     def update_process_counts(self):
-        total_read = total_write = duration = 0
+        new_timestamp = time.time()
+        self.duration = new_timestamp - self.timestamp
+        self.timestamp = new_timestamp
+        total_read = total_write = 0
         tgids = self.options.pids or [int(tgid) for tgid in os.listdir('/proc')
                                       if '0' <= tgid[0] and tgid[0] <= '9']
         for tgid in tgids:
@@ -212,19 +215,17 @@ class ProcessList(object):
                         process.add_stats(stats)
                         total_read += process.stats['read_bytes'][1]
                         total_write += process.stats['write_bytes'][1]
-                        if not duration:
-                            duration = process.stats['ac_etime'][1] / 1000000.0
-        return total_read, total_write, duration
+        return total_read, total_write
 
     def refresh_processes(self):
         for process in self.processes.values():
             process.mark = True
-        total_read_and_write_and_duration = self.update_process_counts()
+        total_read_and_write = self.update_process_counts()
         to_delete = []
         for pid, process in self.processes.iteritems():
             if process.mark:
                 to_delete.append(pid)
         for pid in to_delete:
             del self.processes[pid]
-        return total_read_and_write_and_duration
+        return total_read_and_write
 

@@ -6,6 +6,7 @@ o Added the --only option to only show processes or threads actually doing I/O
 o Typing 'o' dynamically toggles the --only option
 o Cosmetic fixes as well as minor bug fixes
 o Re-organized code to import vanilla pynl80211
+o Added workaround KERNBUG display in -P
 
 0.1
 ~~~

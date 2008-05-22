@@ -27,13 +27,10 @@ def human_bandwidth(size, duration):
         res = str(bw) + ' ' + UNITS[0]
     return res + '/s'
 
-def human_stats(stats):
+def human_stats(stats, duration):
     # Keep in sync with TaskStatsNetlink.members_offsets and
     # IOTopUI.get_data(self)
-    duration = stats['ac_etime'][1] / 1000000.0
     def delay2percent(name): # delay in ns, duration in s
-        if not duration:
-            return 'KERNBUG'
         return '%.2f %%' % min(99.99, stats[name][1] / (duration * 10000000.0))
     io_delay = delay2percent('blkio_delay_total')
     swapin_delay = delay2percent('swapin_delay_total')
@@ -92,8 +89,9 @@ class IOTopUI(object):
         while self.options.iterations is None or \
               iterations < self.options.iterations:
             total = self.process_list.refresh_processes()
-            total_read, total_write, duration = total
-            self.refresh_display(total_read, total_write, duration)
+            total_read, total_write = total
+            self.refresh_display(total_read, total_write,
+                                 self.process_list.duration)
             if self.options.iterations is not None:
                 iterations += 1
                 if iterations >= self.options.iterations:
@@ -152,7 +150,7 @@ class IOTopUI(object):
 
     def get_data(self):
         def format(p):
-            stats = human_stats(p.stats)
+            stats = human_stats(p.stats, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %-8s %11s %11s %7s %7s ' % (p.pid, p.user[:8],
                                 read_bytes, write_bytes, swapin_delay, io_delay)
