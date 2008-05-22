@@ -185,7 +185,7 @@ class IOTopUI(object):
             for l in lines:
                 print l
         else:
-            self.win.clear()
+            self.win.erase()
             self.win.addstr(summary)
             self.win.hline(1, 0, ord(' ') | curses.A_REVERSE, self.width)
             for i in xrange(len(titles)):
