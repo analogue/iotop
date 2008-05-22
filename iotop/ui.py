@@ -69,9 +69,9 @@ class IOTopUI(object):
         if not self.options.batch:
             self.win = win
             self.resize()
-            curses.use_default_colors()
-            curses.start_color()
             try:
+                curses.use_default_colors()
+                curses.start_color()
                 curses.curs_set(0)
             except curses.error:
                 # This call can fail with misconfigured terminals, for example
