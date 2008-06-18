@@ -1,5 +1,6 @@
 import curses
 import errno
+import locale
 import optparse
 import os
 import pwd
@@ -219,6 +220,7 @@ sorting order, o to toggle the --only option, q to quit, any other key to force
 a refresh''' % sys.argv[0]
 
 def main():
+    locale.setlocale(locale.LC_ALL, '')
     parser = optparse.OptionParser(usage=USAGE, version='iotop ' + VERSION)
     parser.add_option('-o', '--only', action='store_true',
                       dest='only', default=False,

@@ -157,7 +157,7 @@ class pinfo(object):
             first_command_char = parts[0].rfind('/') + 1
             parts[0] = parts[0][first_command_char:]
         cmdline = ' '.join(parts).strip()
-        return cmdline.encode('string_escape') or self.name
+        return cmdline or self.name
 
     def did_some_io(self):
         for name in self.stats:

@@ -10,3 +10,6 @@ we can read it (PID died between open() and read()).
 
 Paul Wise <pabs@debian.org>
     Started the man page.
+
+Göran Uddeborg <goeran@uddeborg.se>
+    Reported that iotop was misbehaving with UTF-8 strings.
