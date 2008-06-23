@@ -155,11 +155,9 @@ class IOTopUI(object):
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %-8s %11s %11s %7s %7s ' % (p.pid, p.user[:8],
                                 read_bytes, write_bytes, swapin_delay, io_delay)
-            if self.options.batch:
-                max_cmdline_length = 4096
-            else:
-                max_cmdline_length = self.width - len(line)
-            line += p.get_cmdline()[:max_cmdline_length]
+            line += p.get_cmdline()
+            if not self.options.batch:
+                line = line[:self.width - 1]
             return line
 
         def should_format(p):
