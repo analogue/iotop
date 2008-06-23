@@ -134,7 +134,7 @@ class pinfo(object):
                 # We check monitored PIDs only here
                 self.check_if_valid(uid, options)
                 try:
-                    self.user = pwd.getpwuid(uid).pw_name
+                    self.user = pwd.getpwuid(uid).pw_name.decode('utf-8')
                 except KeyError:
                     self.user = str(uid)
                 break
@@ -149,7 +149,7 @@ class pinfo(object):
         # A process may exec, so we must always reread its cmdline
         try:
             proc_cmdline = open('/proc/%d/cmdline' % self.pid)
-            cmdline = proc_cmdline.read(4096)
+            cmdline = proc_cmdline.read(4096).decode('utf-8')
         except IOError:
             return '{no such process}'
         parts = cmdline.split('\0')

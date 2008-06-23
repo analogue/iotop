@@ -197,7 +197,7 @@ class IOTopUI(object):
                     title += self.sorting_reverse and '>' or '<'
                 self.win.addstr(title, attr)
             for i in xrange(len(lines)):
-                self.win.insstr(i + 2, 0, lines[i])
+                self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
             self.win.refresh()
 
 def run_iotop(win, options):
