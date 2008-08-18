@@ -84,7 +84,7 @@ class TaskStatsNetlink(object):
 
         res = {}
         for name, offset in TaskStatsNetlink.members_offsets:
-            data = reply_data[offset: offset + 8]
+            data = reply_data[offset:offset + 8]
             res[name] = struct.unpack('Q', data)[0]
 
         return res
@@ -166,8 +166,8 @@ class pinfo(object):
         return safe_utf8_decode(cmdline or self.name)
 
     def did_some_io(self):
-        for name in self.stats:
-            if self.stats[name][1]:
+        for value in self.stats.itervalues():
+            if value[1]:
                 return True
 
         return False
