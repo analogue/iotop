@@ -134,7 +134,11 @@ class pinfo(object):
         for line in open(path):
             if line.startswith('Name:'):
                 # Name kernel threads
-                self.name = '[' + line.split()[1].strip() + ']'
+                split = line.split()
+                if len(split) > 1:
+                    self.name = '[' + ' '.join(split[1:]).strip() + ']'
+                else:
+                    self.name = '(unnamed kernel thread)'
             elif line.startswith('Uid:'):
                 uid = int(line.split()[1])
                 # We check monitored PIDs only here
