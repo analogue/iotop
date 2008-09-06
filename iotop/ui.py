@@ -215,7 +215,7 @@ period. SWAPIN and IO are the percentages of time the thread spent respectively
 while swapping in and waiting on I/O more generally.
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, q to quit, any other key to force
-a refresh''' % sys.argv[0]
+a refresh.''' % sys.argv[0]
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
@@ -232,7 +232,7 @@ def main():
                       help='delay between iterations [1 second]',
                       metavar='SEC', default=1)
     parser.add_option('-p', '--pid', type='int', dest='pids', action='append',
-                      help='processes to monitor [all]', metavar='PID')
+                      help='processes/threads to monitor [all]', metavar='PID')
     parser.add_option('-u', '--user', type='str', dest='users', action='append',
                       help='users to monitor [all]', metavar='USER')
     parser.add_option('-P', '--processes', action='store_true',
