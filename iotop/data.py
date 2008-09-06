@@ -32,6 +32,38 @@ if not python25 or not ioaccounting:
     sys.exit(1)
 
 #
+# Interesting fields in a taskstats output
+#
+
+class Stats(object):
+    members_offsets = [
+        ('blkio_delay_total', 40),
+        ('swapin_delay_total', 56),
+        ('read_bytes', 248),
+        ('write_bytes', 256),
+        ('cancelled_write_bytes', 264)
+    ]
+
+    def __init__(self, task_stats_buffer):
+        for name, offset in Stats.members_offsets:
+            data = task_stats_buffer[offset:offset + 8]
+            setattr(self, name, struct.unpack('Q', data)[0])
+
+    def delta(self, other_stats):
+        delta_stats = Stats.__new__(Stats)
+        for name, offset in Stats.members_offsets:
+            self_value = getattr(self, name)
+            other_value = getattr(other_stats, name)
+            setattr(delta_stats, name, self_value - other_value)
+        return delta_stats
+
+    def all_zero(self):
+        for name, offset in Stats.members_offsets:
+            if getattr(self, name) != 0:
+                return False
+        return True
+
+#
 # Netlink usage for taskstats
 #
 
@@ -41,13 +73,6 @@ TASKSTATS_CMD_ATTR_TGID = 2
 
 class TaskStatsNetlink(object):
     # Keep in sync with human_stats(stats, duration) and pinfo.did_some_io()
-    members_offsets = [
-        ('blkio_delay_total', 40),
-        ('swapin_delay_total', 56),
-        ('read_bytes', 248),
-        ('write_bytes', 256),
-        ('cancelled_write_bytes', 264)
-    ]
 
     def __init__(self, options):
         self.options = options
@@ -82,12 +107,7 @@ class TaskStatsNetlink(object):
         assert reply_type == attr + 3
         assert reply_version >= 4
 
-        res = {}
-        for name, offset in TaskStatsNetlink.members_offsets:
-            data = reply_data[offset:offset + 8]
-            res[name] = struct.unpack('Q', data)[0]
-
-        return res
+        return Stats(reply_data)
 
 #
 # PIDs manipulations
@@ -122,9 +142,8 @@ class pinfo(object):
     def __init__(self, pid, options):
         self.mark = False
         self.pid = pid
-        self.stats = {}
-        for name, offset in TaskStatsNetlink.members_offsets:
-            self.stats[name] = (0, 0) # Total, Delta
+        self.stats_total = None
+        self.stats_delta = None
         self.parse_status('/proc/%d/status' % pid, options)
 
     def check_if_valid(self, uid, options):
@@ -151,9 +170,9 @@ class pinfo(object):
 
     def add_stats(self, stats):
         self.stats_timestamp = time.time()
-        for name, value in stats.iteritems():
-            prev_value = self.stats[name][0]
-            self.stats[name] = (value, value - prev_value)
+        if self.stats_total:
+            self.stats_delta = stats.delta(self.stats_total)
+        self.stats_total = stats
 
     def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
@@ -170,11 +189,7 @@ class pinfo(object):
         return safe_utf8_decode(cmdline or self.name)
 
     def did_some_io(self):
-        for value in self.stats.itervalues():
-            if value[1]:
-                return True
-
-        return False
+        return self.stats_delta and not self.stats_delta.all_zero()
 
 class ProcessList(object):
     def __init__(self, taskstats_connection, options):
@@ -223,8 +238,10 @@ class ProcessList(object):
                     if stats:
                         process.mark = False
                         process.add_stats(stats)
-                        total_read += process.stats['read_bytes'][1]
-                        total_write += process.stats['write_bytes'][1]
+                        delta  = process.stats_delta
+                        if delta:
+                            total_read += delta.read_bytes
+                            total_write += delta.write_bytes
         return total_read, total_write
 
     def refresh_processes(self):

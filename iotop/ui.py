@@ -31,12 +31,12 @@ def human_bandwidth(size, duration):
 def human_stats(stats, duration):
     # Keep in sync with TaskStatsNetlink.members_offsets and
     # IOTopUI.get_data(self)
-    def delay2percent(name): # delay in ns, duration in s
-        return '%.2f %%' % min(99.99, stats[name][1] / (duration * 10000000.0))
-    io_delay = delay2percent('blkio_delay_total')
-    swapin_delay = delay2percent('swapin_delay_total')
-    read_bytes = human_bandwidth(stats['read_bytes'][1], duration)
-    written_bytes = stats['write_bytes'][1] - stats['cancelled_write_bytes'][1]
+    def delay2percent(delay): # delay in ns, duration in s
+        return '%.2f %%' % min(99.99, delay / (duration * 10000000.0))
+    io_delay = delay2percent(stats.blkio_delay_total)
+    swapin_delay = delay2percent(stats.swapin_delay_total)
+    read_bytes = human_bandwidth(stats.read_bytes, duration)
+    written_bytes = stats.write_bytes - stats.cancelled_write_bytes
     written_bytes = max(0, written_bytes)
     write_bytes = human_bandwidth(written_bytes, duration)
     return io_delay, swapin_delay, read_bytes, write_bytes
@@ -50,15 +50,15 @@ class IOTopUI(object):
     sorting_keys = [
         (lambda p: p.pid, False),
         (lambda p: p.user, False),
-        (lambda p: p.stats['read_bytes'][1], True),
-        (lambda p: p.stats['write_bytes'][1] -
-                   p.stats['cancelled_write_bytes'][1], True),
-        (lambda p: p.stats['swapin_delay_total'][1], True),
+        (lambda p: p.stats_delta.read_bytes, True),
+        (lambda p: p.stats_delta.write_bytes -
+                   p.stats_delta.cancelled_write_bytes, True),
+        (lambda p: p.stats_delta.swapin_delay_total, True),
         # The default sorting (by I/O % time) should show processes doing
         # only writes, without waiting on them
-        (lambda p: p.stats['blkio_delay_total'][1] or
-                   int(not(not(p.stats['read_bytes'][1] or
-                               p.stats['write_bytes'][1]))), True),
+        (lambda p: p.stats_delta.blkio_delay_total or
+                   int(not(not(p.stats_delta.read_bytes or
+                               p.stats_delta.write_bytes))), True),
         (lambda p: p.get_cmdline(), False),
     ]
 
@@ -151,7 +151,7 @@ class IOTopUI(object):
 
     def get_data(self):
         def format(p):
-            stats = human_stats(p.stats, self.process_list.duration)
+            stats = human_stats(p.stats_delta, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %-8s %11s %11s %7s %7s ' % (p.pid, p.user[:8],
                                 read_bytes, write_bytes, swapin_delay, io_delay)
