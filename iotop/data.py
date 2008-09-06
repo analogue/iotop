@@ -49,19 +49,31 @@ class Stats(object):
             data = task_stats_buffer[offset:offset + 8]
             setattr(self, name, struct.unpack('Q', data)[0])
 
-    def delta(self, other_stats):
+    def accumulate(self, other_stats, operator=sum):
         delta_stats = Stats.__new__(Stats)
         for name, offset in Stats.members_offsets:
             self_value = getattr(self, name)
             other_value = getattr(other_stats, name)
-            setattr(delta_stats, name, self_value - other_value)
+            setattr(delta_stats, name, operator((self_value, other_value)))
         return delta_stats
 
-    def all_zero(self):
+    def delta(self, other_stats):
+        def subtract((me, other)):
+            return me - other
+        return self.accumulate(other_stats, operator=subtract)
+
+    def is_all_zero(self):
         for name, offset in Stats.members_offsets:
             if getattr(self, name) != 0:
                 return False
         return True
+
+    @staticmethod
+    def build_all_zero():
+        stats = Stats.__new__(Stats)
+        for name, offset in Stats.members_offsets:
+            setattr(stats, name, 0)
+        return stats
 
 #
 # Netlink usage for taskstats
@@ -69,7 +81,6 @@ class Stats(object):
 
 TASKSTATS_CMD_GET = 1
 TASKSTATS_CMD_ATTR_PID = 1
-TASKSTATS_CMD_ATTR_TGID = 2
 
 class TaskStatsNetlink(object):
     # Keep in sync with human_stats(stats, duration) and pinfo.did_some_io()
@@ -80,13 +91,9 @@ class TaskStatsNetlink(object):
         controller = Controller(self.connection)
         self.family_id = controller.get_family_id('TASKSTATS')
 
-    def get_task_stats(self, pid):
-        if self.options.processes:
-            attr = TASKSTATS_CMD_ATTR_TGID
-        else:
-            attr = TASKSTATS_CMD_ATTR_PID
+    def get_single_task_stats(self, pid):
         request = GeNlMessage(self.family_id, cmd=TASKSTATS_CMD_GET,
-                              attrs=[U32Attr(attr, pid)],
+                              attrs=[U32Attr(TASKSTATS_CMD_ATTR_PID, pid)],
                               flags=NLM_F_REQUEST)
         request.send(self.connection)
         try:
@@ -104,10 +111,32 @@ class TaskStatsNetlink(object):
         reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
         reply_version = struct.unpack('H', reply.payload[20:22])[0]
         assert reply_length >= 288
-        assert reply_type == attr + 3
+        assert reply_type == TASKSTATS_CMD_ATTR_PID + 3
         assert reply_version >= 4
-
         return Stats(reply_data)
+
+    def get_task_stats(self, pid):
+        if self.options.processes:
+            # We don't use TASKSTATS_CMD_ATTR_TGID as it's only half
+            # implemented in the kernel
+            try:
+                pids = map(int, os.listdir('/proc/%d/task' % pid))
+            except OSError:
+                # Pid not found
+                pids = []
+        else:
+            pids = [pid]
+
+        stats_list = map(self.get_single_task_stats, pids)
+        stats_list = filter(bool, stats_list)
+        if stats_list:
+            res = stats_list[0]
+            for stats in stats_list[1:]:
+                res = res.accumulate(stats)
+            nr_stats = len(stats_list)
+            res.blkio_delay_total /= nr_stats
+            res.swapin_delay_total /= nr_stats
+            return res
 
 #
 # PIDs manipulations
@@ -142,8 +171,8 @@ class pinfo(object):
     def __init__(self, pid, options):
         self.mark = False
         self.pid = pid
-        self.stats_total = None
-        self.stats_delta = None
+        self.stats_total = Stats.build_all_zero()
+        self.stats_delta = Stats.build_all_zero()
         self.parse_status('/proc/%d/status' % pid, options)
 
     def check_if_valid(self, uid, options):
@@ -170,8 +199,7 @@ class pinfo(object):
 
     def add_stats(self, stats):
         self.stats_timestamp = time.time()
-        if self.stats_total:
-            self.stats_delta = stats.delta(self.stats_total)
+        self.stats_delta = stats.delta(self.stats_total)
         self.stats_total = stats
 
     def get_cmdline(self):
@@ -189,7 +217,7 @@ class pinfo(object):
         return safe_utf8_decode(cmdline or self.name)
 
     def did_some_io(self):
-        return self.stats_delta and not self.stats_delta.all_zero()
+        return not self.stats_delta.is_all_zero()
 
 class ProcessList(object):
     def __init__(self, taskstats_connection, options):
@@ -238,21 +266,17 @@ class ProcessList(object):
                     if stats:
                         process.mark = False
                         process.add_stats(stats)
-                        delta  = process.stats_delta
-                        if delta:
-                            total_read += delta.read_bytes
-                            total_write += delta.write_bytes
+                        delta = process.stats_delta
+                        total_read += delta.read_bytes
+                        total_write += delta.write_bytes
         return total_read, total_write
 
     def refresh_processes(self):
         for process in self.processes.values():
             process.mark = True
         total_read_and_write = self.update_process_counts()
-        to_delete = []
-        for pid, process in self.processes.iteritems():
+        for pid, process in self.processes.items():
             if process.mark:
-                to_delete.append(pid)
-        for pid in to_delete:
-            del self.processes[pid]
+                del self.processes[pid]
         return total_read_and_write
 
