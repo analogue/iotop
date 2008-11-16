@@ -22,11 +22,12 @@ def human_bandwidth(size, duration):
     for i in xrange(len(UNITS) - 1, 0, -1):
         base = 1 << (10 * i)
         if 2 * base < size:
-            res = '%.2f %s' % ((float(bw) / base), UNITS[i])
             break
     else:
-        res = str(bw) + ' ' + UNITS[0]
-    return res + '/s'
+        i = 0
+        base = 1
+    res = '%.2f %s/s' % ((float(bw) / base), UNITS[i])
+    return res
 
 def human_stats(stats, duration):
     # Keep in sync with TaskStatsNetlink.members_offsets and
