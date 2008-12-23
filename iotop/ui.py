@@ -196,7 +196,13 @@ class IOTopUI(object):
                     title += self.sorting_reverse and '>' or '<'
                 self.win.addstr(title, attr)
             for i in xrange(len(lines)):
-                self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
+                try:
+                    self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
+                except curses.error:
+                    exc_type, value, traceback = sys.exc_info()
+                    value = '%s win:%s i:%d line:%s' % \
+                                       (value, self.win.getmaxyx(), i, lines[i])
+                    raise exc_type, value.encode('string_escape'), traceback
             self.win.refresh()
 
 def run_iotop(win, options):
