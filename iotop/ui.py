@@ -50,6 +50,7 @@ class IOTopUI(object):
     # key, reverse
     sorting_keys = [
         (lambda p: p.pid, False),
+        (lambda p: p.ioprio_sort_key(), False),
         (lambda p: p.user, False),
         (lambda p: p.stats_delta.read_bytes, True),
         (lambda p: p.stats_delta.write_bytes -
@@ -66,8 +67,8 @@ class IOTopUI(object):
     def __init__(self, win, process_list, options):
         self.process_list = process_list
         self.options = options
-        self.sorting_key = 5
-        self.sorting_reverse = IOTopUI.sorting_keys[5][1]
+        self.sorting_key = 6
+        self.sorting_reverse = IOTopUI.sorting_keys[self.sorting_key][1]
         if not self.options.batch:
             self.win = win
             self.resize()
@@ -154,8 +155,8 @@ class IOTopUI(object):
         def format(p):
             stats = human_stats(p.stats_delta, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
-            line = '%5d %-8s %11s %11s %7s %7s ' % (p.pid, p.user[:8],
-                                read_bytes, write_bytes, swapin_delay, io_delay)
+            line = '%5d %4s %-8s %11s %11s %7s %7s ' % (p.pid, p.ioprio,
+                    p.user[:8], read_bytes, write_bytes, swapin_delay, io_delay)
             line += p.get_cmdline()
             if not self.options.batch:
                 line = line[:self.width - 1]
@@ -176,7 +177,7 @@ class IOTopUI(object):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
                                         human_bandwidth(total_read, duration),
                                         human_bandwidth(total_write, duration))
-        titles = ['  PID', ' USER', '      DISK READ', '  DISK WRITE',
+        titles = ['  PID', ' PRIO', ' USER', '      DISK READ', '  DISK WRITE',
                   '   SWAPIN', '    IO', '    COMMAND']
         lines = self.get_data()
         if self.options.batch:
@@ -219,7 +220,8 @@ USAGE = '''%s [OPTIONS]
 
 DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling
 period. SWAPIN and IO are the percentages of time the thread spent respectively
-while swapping in and waiting on I/O more generally.
+while swapping in and waiting on I/O more generally. PRIO is the I/O priority at
+which the thread is running (set using the ionice command).
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, q to quit, any other key to force
 a refresh.''' % sys.argv[0]

@@ -6,6 +6,7 @@ import struct
 import sys
 import time
 
+from iotop import ioprio
 from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
 from genetlink import Controller, GeNlMessage
 
@@ -176,6 +177,7 @@ class pinfo(object):
         self.stats_total = Stats.build_all_zero()
         self.stats_delta = Stats.build_all_zero()
         self.parse_status('/proc/%d/status' % pid, options)
+        self.ioprio = ioprio.get(pid)
 
     def check_if_valid(self, uid, options):
         self.valid = options.pids or not options.uids or uid in options.uids
@@ -220,6 +222,9 @@ class pinfo(object):
 
     def did_some_io(self):
         return not self.stats_delta.is_all_zero()
+
+    def ioprio_sort_key(self):
+        return ioprio.sort_key(self.ioprio)
 
 class ProcessList(object):
     def __init__(self, taskstats_connection, options):
