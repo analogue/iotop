@@ -138,6 +138,8 @@ class IOTopUI(object):
                 lambda: self.reverse_sorting(),
             ord('o'):
                 toggle_only_io,
+            ord('O'):
+                toggle_only_io,
             curses.KEY_LEFT:
                 lambda: self.adjust_sorting_key(-1),
             curses.KEY_RIGHT:
