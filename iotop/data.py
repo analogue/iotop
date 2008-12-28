@@ -177,7 +177,6 @@ class pinfo(object):
         self.stats_total = Stats.build_all_zero()
         self.stats_delta = Stats.build_all_zero()
         self.parse_status('/proc/%d/status' % pid, options)
-        self.ioprio = ioprio.get(pid)
 
     def check_if_valid(self, uid, options):
         self.valid = options.pids or not options.uids or uid in options.uids
@@ -205,6 +204,7 @@ class pinfo(object):
         self.stats_timestamp = time.time()
         self.stats_delta = stats.delta(self.stats_total)
         self.stats_total = stats
+        self.ioprio = ioprio.get(self.pid)
 
     def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
