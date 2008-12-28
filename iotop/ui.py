@@ -127,6 +127,9 @@ class IOTopUI(object):
     def handle_key(self, key):
         def toggle_only_io():
             self.options.only ^= True
+        def toggle_processes():
+            self.options.processes ^= True
+            self.process_list.refresh_processes()
         key_bindings = {
             ord('q'):
                 lambda: sys.exit(0),
@@ -140,6 +143,10 @@ class IOTopUI(object):
                 toggle_only_io,
             ord('O'):
                 toggle_only_io,
+            ord('p'):
+                toggle_processes,
+            ord('P'):
+                toggle_processes,
             curses.KEY_LEFT:
                 lambda: self.adjust_sorting_key(-1),
             curses.KEY_RIGHT:
@@ -179,7 +186,11 @@ class IOTopUI(object):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
                                         human_bandwidth(total_read, duration),
                                         human_bandwidth(total_write, duration))
-        titles = ['  PID', ' PRIO', ' USER', '      DISK READ', '  DISK WRITE',
+        if self.options.processes:
+            pid = '  PID'
+        else:
+            pid = '  TID'
+        titles = [pid, ' PRIO', ' USER', '      DISK READ', '  DISK WRITE',
                   '   SWAPIN', '    IO', '    COMMAND']
         lines = self.get_data()
         if self.options.batch:
@@ -225,8 +236,8 @@ period. SWAPIN and IO are the percentages of time the thread spent respectively
 while swapping in and waiting on I/O more generally. PRIO is the I/O priority at
 which the thread is running (set using the ionice command).
 Controls: left and right arrows to change the sorting column, r to invert the
-sorting order, o to toggle the --only option, q to quit, any other key to force
-a refresh.''' % sys.argv[0]
+sorting order, o to toggle the --only option, p to toggle the --processes
+option, q to quit, any other key to force a refresh.''' % sys.argv[0]
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
@@ -247,7 +258,7 @@ def main():
     parser.add_option('-u', '--user', type='str', dest='users', action='append',
                       help='users to monitor [all]', metavar='USER')
     parser.add_option('-P', '--processes', action='store_true',
-                      dest='processes',
+                      dest='processes', default=False,
                       help='only show processes, not all threads')
     options, args = parser.parse_args()
     if args:
