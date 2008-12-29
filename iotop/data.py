@@ -172,7 +172,7 @@ def safe_utf8_decode(s):
 
 class pinfo(object):
     def __init__(self, pid, options):
-        self.mark = False
+        self.mark = True
         self.pid = pid
         self.stats_total = Stats.build_all_zero()
         self.stats_delta = Stats.build_all_zero()
