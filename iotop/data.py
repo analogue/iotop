@@ -1,5 +1,6 @@
 import errno
 import os
+import pprint
 import pwd
 import socket
 import struct
@@ -34,11 +35,15 @@ if not python25 or not ioaccounting:
           boolean2string(ioaccounting)
     sys.exit(1)
 
+class DumpableObject(object):
+    def __repr__(self):
+        return '%s: %s>' % (str(type(self))[:-1], pprint.pformat(self.__dict__))
+
 #
 # Interesting fields in a taskstats output
 #
 
-class Stats(object):
+class Stats(DumpableObject):
     members_offsets = [
         ('blkio_delay_total', 40),
         ('swapin_delay_total', 56),
@@ -170,7 +175,7 @@ def safe_utf8_decode(s):
     except UnicodeDecodeError:
         return s.encode('string_escape')
 
-class pinfo(object):
+class pinfo(DumpableObject):
     def __init__(self, pid, options):
         self.mark = True
         self.pid = pid
@@ -226,7 +231,7 @@ class pinfo(object):
     def ioprio_sort_key(self):
         return ioprio.sort_key(self.ioprio)
 
-class ProcessList(object):
+class ProcessList(DumpableObject):
     def __init__(self, taskstats_connection, options):
         # {pid: pinfo}
         self.processes = {}
