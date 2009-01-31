@@ -198,6 +198,7 @@ class IOTopUI(object):
             print ''.join(titles)
             for l in lines:
                 print l
+            sys.stdout.flush()
         else:
             self.win.erase()
             self.win.addstr(summary)

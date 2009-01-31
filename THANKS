@@ -13,3 +13,7 @@ Paul Wise <pabs@debian.org>
 
 Göran Uddeborg <goeran@uddeborg.se>
     Reported that iotop was misbehaving with UTF-8 strings.
+
+Ryan Lovett <ryan@stat.berkeley.edu>
+    Contributed a bugfix: flush the output in batch mode, so that a potential
+output file is updated.
