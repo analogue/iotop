@@ -165,8 +165,8 @@ class IOTopUI(object):
             stats = human_stats(p.stats_delta, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
-                p.pid, p.ioprio, p.get_user()[:8], read_bytes, write_bytes,
-                swapin_delay, io_delay)
+                p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
+                write_bytes, swapin_delay, io_delay)
             line += p.get_cmdline()
             if not self.options.batch:
                 line = line[:self.width - 1]
@@ -175,8 +175,7 @@ class IOTopUI(object):
         def should_format(p):
             return not self.options.only or p.did_some_io()
 
-        processes = self.process_list.processes.values()
-        processes = filter(should_format, processes)
+        processes = filter(should_format, self.process_list.processes.values())
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         processes.sort(key=key, reverse=self.sorting_reverse)
         if not self.options.batch:

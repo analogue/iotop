@@ -1,4 +1,5 @@
 import errno
+import glob
 import os
 import pprint
 import pwd
@@ -8,7 +9,7 @@ import struct
 import sys
 import time
 
-from iotop import ioprio
+from iotop import ioprio, vmstat
 from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
 from genetlink import Controller, GeNlMessage
 
@@ -37,8 +38,10 @@ if not python25 or not ioaccounting:
     sys.exit(1)
 
 class DumpableObject(object):
+    """Base class for all objects that allows easy introspection when printed"""
     def __repr__(self):
         return '%s: %s>' % (str(type(self))[:-1], pprint.pformat(self.__dict__))
+
 
 #
 # Interesting fields in a taskstats output
@@ -59,6 +62,7 @@ class Stats(DumpableObject):
             setattr(self, name, struct.unpack('Q', data)[0])
 
     def accumulate(self, other_stats, operator=sum):
+        """Returns a new Stats object built from operator(self, other_stats)"""
         delta_stats = Stats.__new__(Stats)
         for name, offset in Stats.members_offsets:
             self_value = getattr(self, name)
@@ -67,6 +71,7 @@ class Stats(DumpableObject):
         return delta_stats
 
     def delta(self, other_stats):
+        """Returns self - other_stats"""
         def subtract((me, other)):
             return me - other
         return self.accumulate(other_stats, operator=subtract)
@@ -124,34 +129,12 @@ class TaskStatsNetlink(object):
         assert reply_version >= 4
         return Stats(reply_data)
 
-    def get_task_stats(self, pid):
-        if self.options.processes:
-            # We don't use TASKSTATS_CMD_ATTR_TGID as it's only half
-            # implemented in the kernel
-            try:
-                pids = map(int, os.listdir('/proc/%d/task' % pid))
-            except OSError:
-                # Pid not found
-                pids = []
-        else:
-            pids = [pid]
-
-        stats_list = map(self.get_single_task_stats, pids)
-        stats_list = filter(bool, stats_list)
-        if stats_list:
-            res = stats_list[0]
-            for stats in stats_list[1:]:
-                res = res.accumulate(stats)
-            nr_stats = len(stats_list)
-            res.blkio_delay_total /= nr_stats
-            res.swapin_delay_total /= nr_stats
-            return res
-
 #
 # PIDs manipulations
 #
 
 def find_uids(options):
+    """Build options.uids from options.users by resolving usernames to UIDs"""
     options.uids = []
     error = False
     for u in options.users or []:
@@ -176,14 +159,30 @@ def safe_utf8_decode(s):
     except UnicodeDecodeError:
         return s.encode('string_escape')
 
-class pinfo(DumpableObject):
-    def __init__(self, pid, options):
+class ThreadInfo(DumpableObject):
+    """Stats for a single thread"""
+    def __init__(self, tid):
+        self.tid = tid
         self.mark = True
+        self.stats_total = Stats.build_all_zero()
+        self.stats_delta = Stats.build_all_zero()
+
+    def get_ioprio(self):
+        return ioprio.get(self.tid)
+
+    def update_stats(self, stats):
+        self.stats_delta = stats.delta(self.stats_total)
+        self.stats_total = stats
+
+class ProcessInfo(DumpableObject):
+    """Stats for a single process (a single line in the output): if
+    options.processes is set, it is a collection of threads, otherwise a single
+    thread."""
+    def __init__(self, pid):
         self.pid = pid
         self.uid = None
         self.user = None
-        self.stats_total = Stats.build_all_zero()
-        self.stats_delta = Stats.build_all_zero()
+        self.threads = {} # {tid: ThreadInfo}
 
     def is_monitored(self, options):
         if (options.pids and not options.processes and
@@ -252,76 +251,113 @@ class pinfo(DumpableObject):
         cmdline = ' '.join(parts).strip()
         return safe_utf8_decode(cmdline)
 
-    def add_stats(self, stats):
-        self.stats_timestamp = time.time()
-        self.stats_delta = stats.delta(self.stats_total)
-        self.stats_total = stats
-        self.ioprio = ioprio.get(self.pid)
-
     def did_some_io(self):
-        return not self.stats_delta.is_all_zero()
+        return not all(t.stats_delta.is_all_zero() for
+                                                 t in self.threads.itervalues())
+
+    def get_ioprio(self):
+        priorities = set(t.get_ioprio() for t in self.threads.itervalues())
+        if len(priorities) == 1:
+            return priorities.pop()
+        return '?'
 
     def ioprio_sort_key(self):
-        return ioprio.sort_key(self.ioprio)
+        return ioprio.sort_key(self.get_ioprio())
+
+    def get_thread(self, tid):
+        thread = self.threads.get(tid, None)
+        if not thread:
+            thread = ThreadInfo(tid)
+            self.threads[tid] = thread
+        return thread
 
 class ProcessList(DumpableObject):
     def __init__(self, taskstats_connection, options):
-        # {pid: pinfo}
+        # {pid: ProcessInfo}
         self.processes = {}
         self.taskstats_connection = taskstats_connection
         self.options = options
         self.timestamp = time.time()
+        self.vmstat = vmstat.VmStat()
 
         # A first time as we are interested in the delta
         self.update_process_counts()
 
     def get_process(self, pid):
+        """Either get the specified PID from self.processes or build a new
+        ProcessInfo if we see this PID for the first time"""
         process = self.processes.get(pid, None)
         if not process:
-            try:
-                process = pinfo(pid, self.options)
-            except IOError:
-                # IOError: [Errno 2] No such file or directory: '/proc/...'
-                return
-            if not process.is_monitored(self.options):
-                return
+            process = ProcessInfo(pid)
             self.processes[pid] = process
-        return process
 
-    def list_pids(self, tgid):
-        if self.options.processes or self.options.pids:
+        if process.is_monitored(self.options):
+            return process
+
+    def list_tgids(self):
+        if self.options.pids:
+            for pid in self.options.pids:
+                yield pid
+
+        pattern = '/proc/[0-9]*'
+        if not self.options.processes:
+            pattern += '/task/*'
+
+        for path in glob.iglob(pattern):
+            yield int(os.path.basename(path))
+
+    def list_tids(self, tgid):
+        if not self.options.processes:
             return [tgid]
+
         try:
-            return map(int, os.listdir('/proc/%d/task' % tgid))
+            tids = map(int, os.listdir('/proc/%d/task' % tgid))
         except OSError:
             return []
+
+        if self.options.pids:
+            tids = list(set(self.options.pids).intersection(set(tids)))
+
+        return tids
 
     def update_process_counts(self):
         new_timestamp = time.time()
         self.duration = new_timestamp - self.timestamp
         self.timestamp = new_timestamp
-        total_read = total_write = 0
-        tgids = self.options.pids or [int(tgid) for tgid in os.listdir('/proc')
-                                      if '0' <= tgid[0] and tgid[0] <= '9']
-        for tgid in tgids:
-            for pid in self.list_pids(tgid):
-                process = self.get_process(pid)
-                if process:
-                    stats = self.taskstats_connection.get_task_stats(pid)
-                    if stats:
-                        process.mark = False
-                        process.add_stats(stats)
-                        delta = process.stats_delta
-                        total_read += delta.read_bytes
-                        total_write += delta.write_bytes
-        return total_read, total_write
+
+        for tgid in self.list_tgids():
+            process = self.get_process(tgid)
+            if not process:
+                continue
+            for tid in self.list_tids(tgid):
+                thread = process.get_thread(tid)
+                stats = self.taskstats_connection.get_single_task_stats(tid)
+                thread.update_stats(stats)
+                thread.mark = False
+
+        return self.vmstat.delta()
 
     def refresh_processes(self):
-        for process in self.processes.values():
-            process.mark = True
+        for process in self.processes.itervalues():
+            for thread in process.threads.itervalues():
+                thread.mark = True
+
         total_read_and_write = self.update_process_counts()
+
         for pid, process in self.processes.items():
-            if process.mark:
+            stats_delta = Stats.build_all_zero()
+            for tid, thread in process.threads.items():
+                if thread.mark:
+                    del process.threads[tid]
+                else:
+                    stats_delta = stats_delta.accumulate(thread.stats_delta)
+            nr_threads = len(process.threads)
+            if nr_threads:
+                stats_delta.blkio_delay_total /= nr_threads
+                stats_delta.swapin_delay_total /= nr_threads
+                process.stats_delta = stats_delta
+            else:
                 del self.processes[pid]
+
         return total_read_and_write
 
