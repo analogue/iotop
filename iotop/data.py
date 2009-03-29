@@ -220,7 +220,7 @@ class pinfo(DumpableObject):
                 self.user = safe_utf8_decode(pwd.getpwuid(uid).pw_name)
             except KeyError:
                 self.user = str(uid)
-        return self.user
+        return self.user or '{none}'
 
     def get_proc_status_name(self):
         try:
