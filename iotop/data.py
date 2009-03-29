@@ -3,6 +3,7 @@ import os
 import pprint
 import pwd
 import socket
+import stat
 import struct
 import sys
 import time
@@ -179,37 +180,60 @@ class pinfo(DumpableObject):
     def __init__(self, pid, options):
         self.mark = True
         self.pid = pid
+        self.uid = None
+        self.user = None
         self.stats_total = Stats.build_all_zero()
         self.stats_delta = Stats.build_all_zero()
-        self.parse_status('/proc/%d/status' % pid, options)
 
-    def check_if_valid(self, uid, options):
-        self.valid = options.pids or not options.uids or uid in options.uids
+    def is_monitored(self, options):
+        if (options.pids and not options.processes and
+            self.pid not in options.pids):
+            # We only monitor some threads, not this one
+            return False
 
-    def parse_status(self, path, options):
-        for line in open(path):
-            if line.startswith('Name:'):
-                # Name kernel threads
-                split = line.split()
-                if len(split) > 1:
-                    self.name = '[' + ' '.join(split[1:]).strip() + ']'
-                else:
-                    self.name = '(unnamed kernel thread)'
-            elif line.startswith('Uid:'):
-                uid = int(line.split()[1])
-                # We check monitored PIDs only here
-                self.check_if_valid(uid, options)
-                try:
-                    self.user = safe_utf8_decode(pwd.getpwuid(uid).pw_name)
-                except KeyError:
-                    self.user = str(uid)
-                break
+        if options.uids and self.get_uid() not in options.uids:
+            # We only monitor some users, not this one
+            return False
 
-    def add_stats(self, stats):
-        self.stats_timestamp = time.time()
-        self.stats_delta = stats.delta(self.stats_total)
-        self.stats_total = stats
-        self.ioprio = ioprio.get(self.pid)
+        return True
+
+    def get_uid(self):
+        if self.uid:
+            return self.uid
+        # uid in (None, 0) means either we don't know the UID yet or the process
+        # runs as root so it can change its UID. In both cases it means we have
+        # to find out its current UID.
+        try:
+            uid = os.stat('/proc/%d' % self.pid)[stat.ST_UID]
+        except OSError:
+            # The process disappeared
+            uid = None
+        if uid != self.uid:
+            # Maybe the process called setuid()
+            self.user = None
+        return uid
+
+    def get_user(self):
+        uid = self.get_uid()
+        if uid is not None and not self.user:
+            try:
+                self.user = safe_utf8_decode(pwd.getpwuid(uid).pw_name)
+            except KeyError:
+                self.user = str(uid)
+        return self.user
+
+    def get_proc_status_name(self):
+        try:
+            proc_status = open('/proc/%d/status' % self.pid)
+        except IOError:
+            return '{no such process}'
+        first_line = proc_status.readline()
+        prefix = 'Name:\t'
+        if first_line.startswith(prefix):
+            name = first_line[6:].strip()
+        else:
+            name = ''
+        return name or '{no name}'
 
     def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
@@ -218,12 +242,21 @@ class pinfo(DumpableObject):
             cmdline = proc_cmdline.read(4096)
         except IOError:
             return '{no such process}'
+        if not cmdline:
+            # Probably a kernel thread, get its name from /proc/PID/status
+            return self.get_proc_status_name()
         parts = cmdline.split('\0')
         if parts[0].startswith('/'):
             first_command_char = parts[0].rfind('/') + 1
             parts[0] = parts[0][first_command_char:]
         cmdline = ' '.join(parts).strip()
-        return safe_utf8_decode(cmdline or self.name)
+        return safe_utf8_decode(cmdline)
+
+    def add_stats(self, stats):
+        self.stats_timestamp = time.time()
+        self.stats_delta = stats.delta(self.stats_total)
+        self.stats_total = stats
+        self.ioprio = ioprio.get(self.pid)
 
     def did_some_io(self):
         return not self.stats_delta.is_all_zero()
@@ -250,7 +283,7 @@ class ProcessList(DumpableObject):
             except IOError:
                 # IOError: [Errno 2] No such file or directory: '/proc/...'
                 return
-            if not process.valid:
+            if not process.is_monitored(self.options):
                 return
             self.processes[pid] = process
         return process

@@ -51,7 +51,7 @@ class IOTopUI(object):
     sorting_keys = [
         (lambda p: p.pid, False),
         (lambda p: p.ioprio_sort_key(), False),
-        (lambda p: p.user, False),
+        (lambda p: p.get_user(), False),
         (lambda p: p.stats_delta.read_bytes, True),
         (lambda p: p.stats_delta.write_bytes -
                    p.stats_delta.cancelled_write_bytes, True),
@@ -164,8 +164,9 @@ class IOTopUI(object):
         def format(p):
             stats = human_stats(p.stats_delta, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
-            line = '%5d %4s %-8s %11s %11s %7s %7s ' % (p.pid, p.ioprio,
-                    p.user[:8], read_bytes, write_bytes, swapin_delay, io_delay)
+            line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
+                p.pid, p.ioprio, p.get_user()[:8], read_bytes, write_bytes,
+                swapin_delay, io_delay)
             line += p.get_cmdline()
             if not self.options.batch:
                 line = line[:self.width - 1]
