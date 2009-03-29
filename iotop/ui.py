@@ -221,11 +221,43 @@ class IOTopUI(object):
                     raise exc_type, value.encode('string_escape'), traceback
             self.win.refresh()
 
-def run_iotop(win, options):
+def run_iotop_window(win, options):
     taskstats_connection = TaskStatsNetlink(options)
     process_list = ProcessList(taskstats_connection, options)
     ui = IOTopUI(win, process_list, options)
     ui.run()
+
+def run_iotop(options):
+    if options.batch:
+        return run_iotop_window(None, options)
+    else:
+        return curses.wrapper(run_iotop_window, options)
+
+#
+# Profiling
+#
+
+def _profile(continuation):
+    prof_file = 'iotop.prof'
+    try:
+        import cProfile
+        import pstats
+        print 'Profiling using cProfile'
+        cProfile.runctx('continuation()', globals(), locals(), prof_file)
+        stats = pstats.Stats(prof_file)
+    except ImportError:
+        import hotshot
+        import hotshot.stats
+        prof = hotshot.Profile(prof_file, lineevents=1)
+        print 'Profiling using hotshot'
+        prof.runcall(continuation)
+        prof.close()
+        stats = hotshot.stats.load(prof_file)
+    stats.strip_dirs()
+    stats.sort_stats('time', 'calls')
+    stats.print_stats(50)
+    stats.print_callees(50)
+    os.remove(prof_file)
 
 #
 # Main program
@@ -262,13 +294,24 @@ def main():
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes', default=False,
                       help='only show processes, not all threads')
+    parser.add_option('--profile', action='store_true', dest='profile',
+                      default=False, help=optparse.SUPPRESS_HELP)
+
     options, args = parser.parse_args()
     if args:
         parser.error('Unexpected arguments: ' + ' '.join(args))
     find_uids(options)
     options.pids = options.pids or []
-    if options.batch:
-        run_iotop(None, options)
+
+    main_loop = lambda: run_iotop(options)
+
+    if options.profile:
+        def safe_main_loop():
+            try:
+                main_loop()
+            except:
+                pass
+        _profile(safe_main_loop)
     else:
-        curses.wrapper(run_iotop, options)
+        main_loop()
 
