@@ -1,6 +1,7 @@
 0.3
 ~~~
-o -P is now fully implemented
+o -P is now fully implemented and is dynamically toggled with 'p'
+o Show the I/O priority (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob_plain;f=Documentation/block/ioprio.txt;hb=HEAD)
 
 0.2.1
 ~~~~~
