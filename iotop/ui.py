@@ -237,7 +237,8 @@ class IOTopUI(object):
                     exc_type, value, traceback = sys.exc_info()
                     value = '%s win:%s i:%d line:%s' % \
                                        (value, self.win.getmaxyx(), i, lines[i])
-                    raise exc_type, value.encode('string_escape'), traceback
+                    value = str(value).encode('string_escape')
+                    raise exc_type, value, traceback
             self.win.refresh()
 
 def run_iotop_window(win, options):
