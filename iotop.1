@@ -1,5 +1,5 @@
 .\" Debian manual page, has been forwarded upstream
-.TH IOTOP "1" "September 2008"
+.TH IOTOP "1" "April 2009"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -19,7 +19,7 @@ In addition, the total I/O bandwidth read and written during the sampling
 period is displayed at the top of the interface.
 .PP
 Use the left and right arrows to change the sorting, r to reverse the
-sorting order, o to toggle the \-\-only option, p to toggle the \-\-processes option or q to quit. Any other key will force a refresh.
+sorting order, o to toggle the \-\-only option, p to toggle the \-\-processes option, a to toggle the --accumulated option or q to quit. Any other key will force a refresh.
 .SH OPTIONS
 .TP
 \fB\-\-version\fR
@@ -51,6 +51,9 @@ A list of users to monitor (all by default)
 .TP
 \fB\-P\fR, \fB\-\-processes\fR
 Only show processes. Normally iotop shows all threads.
+.TP
+\fB\-a\fR, \fB\-\-accumulated\fR
+Show accumulated I/O instead of bandwidth. In this mode, iotop shows the amount of I/O processes have done since iotop started.
 .SH SEE ALSO
 .BR top (1),
 .BR vmstat (1)

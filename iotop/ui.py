@@ -7,6 +7,7 @@ import pwd
 import select
 import struct
 import sys
+import time
 
 from iotop.data import find_uids, TaskStatsNetlink, ProcessList
 from iotop.version import VERSION
@@ -17,8 +18,7 @@ from iotop.version import VERSION
 
 UNITS = ['B', 'K', 'M', 'G', 'T', 'P', 'E']
 
-def human_bandwidth(size, duration):
-    bw = size and float(size) / duration
+def human_size(size):
     for i in xrange(len(UNITS) - 1, 0, -1):
         base = 1 << (10 * i)
         if 2 * base < size:
@@ -26,20 +26,29 @@ def human_bandwidth(size, duration):
     else:
         i = 0
         base = 1
-    res = '%.2f %s/s' % ((float(bw) / base), UNITS[i])
-    return res
+    return '%.2f %s' % ((float(size) / base), UNITS[i])
 
-def human_stats(stats, duration):
+def human_bandwidth(size, duration):
+    return human_size(size and float(size) / duration) + '/s'
+
+def human_stats(process, duration, is_accumulated):
     # Keep in sync with TaskStatsNetlink.members_offsets and
     # IOTopUI.get_data(self)
     def delay2percent(delay): # delay in ns, duration in s
         return '%.2f %%' % min(99.99, delay / (duration * 10000000.0))
+    if is_accumulated:
+        stats = process.stats_accum
+        display_format = lambda size, duration: human_size(size)
+        duration = time.time() - process.stats_accum_timestamp
+    else:
+        stats = process.stats_delta
+        display_format = human_bandwidth
     io_delay = delay2percent(stats.blkio_delay_total)
     swapin_delay = delay2percent(stats.swapin_delay_total)
-    read_bytes = human_bandwidth(stats.read_bytes, duration)
+    read_bytes = display_format(stats.read_bytes, duration)
     written_bytes = stats.write_bytes - stats.cancelled_write_bytes
     written_bytes = max(0, written_bytes)
-    write_bytes = human_bandwidth(written_bytes, duration)
+    write_bytes = display_format(written_bytes, duration)
     return io_delay, swapin_delay, read_bytes, write_bytes
 
 #
@@ -125,10 +134,14 @@ class IOTopUI(object):
             self.sorting_reverse = IOTopUI.sorting_keys[self.sorting_key][1]
 
     def handle_key(self, key):
+        def toggle_accumulated():
+            self.options.accumulated ^= True
+            self.process_list.clear()
         def toggle_only_io():
             self.options.only ^= True
         def toggle_processes():
             self.options.processes ^= True
+            self.process_list.clear()
             self.process_list.refresh_processes()
         key_bindings = {
             ord('q'):
@@ -139,6 +152,10 @@ class IOTopUI(object):
                 lambda: self.reverse_sorting(),
             ord('R'):
                 lambda: self.reverse_sorting(),
+            ord('a'):
+                toggle_accumulated,
+            ord('A'):
+                toggle_accumulated,
             ord('o'):
                 toggle_only_io,
             ord('O'):
@@ -162,7 +179,8 @@ class IOTopUI(object):
 
     def get_data(self):
         def format(p):
-            stats = human_stats(p.stats_delta, self.process_list.duration)
+            stats = human_stats(p, self.process_list.duration,
+                                self.options.accumulated)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
                 p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
@@ -190,8 +208,8 @@ class IOTopUI(object):
             pid = '  PID'
         else:
             pid = '  TID'
-        titles = [pid, ' PRIO', ' USER', '      DISK READ', '  DISK WRITE',
-                  '   SWAPIN', '    IO', '    COMMAND']
+        titles = [pid, '  PRIO', '  USER', '     DISK READ', '  DISK WRITE',
+                  '  SWAPIN', '      IO', '    COMMAND']
         lines = self.get_data()
         if self.options.batch:
             print summary
@@ -206,6 +224,8 @@ class IOTopUI(object):
             for i in xrange(len(titles)):
                 attr = curses.A_REVERSE
                 title = titles[i]
+                if i == self.sorting_key:
+                    title = title[1:]
                 if i == self.sorting_key:
                     attr |= curses.A_BOLD
                     title += self.sorting_reverse and '>' or '<'
@@ -268,9 +288,10 @@ DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling
 period. SWAPIN and IO are the percentages of time the thread spent respectively
 while swapping in and waiting on I/O more generally. PRIO is the I/O priority at
 which the thread is running (set using the ionice command).
+
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, p to toggle the --processes
-option, q to quit, any other key to force a refresh.''' % sys.argv[0]
+option, a to toggle the --accumulated option, q to quit, any other key to force a refresh.''' % sys.argv[0]
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
@@ -293,6 +314,9 @@ def main():
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes', default=False,
                       help='only show processes, not all threads')
+    parser.add_option('-a', '--accumulated', action='store_true',
+                      dest='accumulated', default=False,
+                      help='show accumulated I/O instead of bandwidth')
     parser.add_option('--profile', action='store_true', dest='profile',
                       default=False, help=optparse.SUPPRESS_HELP)
 

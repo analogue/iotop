@@ -164,15 +164,18 @@ class ThreadInfo(DumpableObject):
     def __init__(self, tid):
         self.tid = tid
         self.mark = True
-        self.stats_total = Stats.build_all_zero()
-        self.stats_delta = Stats.build_all_zero()
+        self.stats_total = None
+        self.stats_delta = None
 
     def get_ioprio(self):
         return ioprio.get(self.tid)
 
     def update_stats(self, stats):
+        if not self.stats_total:
+            self.stats_total = stats
         self.stats_delta = stats.delta(self.stats_total)
         self.stats_total = stats
+
 
 class ProcessInfo(DumpableObject):
     """Stats for a single process (a single line in the output): if
@@ -183,6 +186,9 @@ class ProcessInfo(DumpableObject):
         self.uid = None
         self.user = None
         self.threads = {} # {tid: ThreadInfo}
+        self.stats_delta = Stats.build_all_zero()
+        self.stats_accum = Stats.build_all_zero()
+        self.stats_accum_timestamp = time.time()
 
     def is_monitored(self, options):
         if (options.pids and not options.processes and
@@ -271,6 +277,26 @@ class ProcessInfo(DumpableObject):
             self.threads[tid] = thread
         return thread
 
+    def update_stats(self):
+        stats_delta = Stats.build_all_zero()
+        for tid, thread in self.threads.items():
+            if thread.mark:
+                del self.threads[tid]
+            else:
+                stats_delta = stats_delta.accumulate(thread.stats_delta)
+
+        nr_threads = len(self.threads)
+        if not nr_threads:
+            return False
+
+        stats_delta.blkio_delay_total /= nr_threads
+        stats_delta.swapin_delay_total /= nr_threads
+
+        self.stats_delta = stats_delta
+        self.stats_accum = self.stats_accum.accumulate(self.stats_delta)
+
+        return True
+
 class ProcessList(DumpableObject):
     def __init__(self, taskstats_connection, options):
         # {pid: ProcessInfo}
@@ -332,8 +358,9 @@ class ProcessList(DumpableObject):
             for tid in self.list_tids(tgid):
                 thread = process.get_thread(tid)
                 stats = self.taskstats_connection.get_single_task_stats(tid)
-                thread.update_stats(stats)
-                thread.mark = False
+                if stats:
+                    thread.update_stats(stats)
+                    thread.mark = False
 
         return self.vmstat.delta()
 
@@ -345,19 +372,10 @@ class ProcessList(DumpableObject):
         total_read_and_write = self.update_process_counts()
 
         for pid, process in self.processes.items():
-            stats_delta = Stats.build_all_zero()
-            for tid, thread in process.threads.items():
-                if thread.mark:
-                    del process.threads[tid]
-                else:
-                    stats_delta = stats_delta.accumulate(thread.stats_delta)
-            nr_threads = len(process.threads)
-            if nr_threads:
-                stats_delta.blkio_delay_total /= nr_threads
-                stats_delta.swapin_delay_total /= nr_threads
-                process.stats_delta = stats_delta
-            else:
+            if not process.update_stats():
                 del self.processes[pid]
 
         return total_read_and_write
 
+    def clear(self):
+        self.processes = {}
