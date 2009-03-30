@@ -10,6 +10,7 @@ VERSION=$(python -c "from $PACKAGE.version import VERSION; print VERSION")
 echo "$PACKAGE-$VERSION: $TEMPDIR"
 mkdir "$TEMPDIR/$PACKAGE-$VERSION"
 git archive HEAD | (cd "$TEMPDIR/$PACKAGE-$VERSION" && tar vx)
+git2cl > "$TEMPDIR/$PACKAGE-$VERSION/ChangeLog"
 DIR="$PWD"
 cd "$TEMPDIR"
 rm "$PACKAGE-$VERSION/release.sh"
