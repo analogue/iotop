@@ -238,7 +238,11 @@ class ProcessInfo(DumpableObject):
             name = first_line[6:].strip()
         else:
             name = ''
-        return name or '{no name}'
+        if name:
+            name = '[%s]' % name
+        else:
+            name = '{no name}'
+        return name
 
     def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
