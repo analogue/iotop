@@ -2,7 +2,7 @@
 
 import sys
 
-sys.path.insert(0, 'setuptools-0.6c6-py2.4.egg')
+sys.path.insert(0, 'setuptools-0.6c9-py2.4.egg')
 from setuptools import setup, find_packages
 from iotop.version import VERSION
 
