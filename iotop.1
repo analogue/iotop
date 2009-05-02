@@ -54,6 +54,9 @@ Only show processes. Normally iotop shows all threads.
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, iotop shows the amount of I/O processes have done since iotop started.
+.TP
+\fB\-k\fR, \fB\-\-kilobytes\fR
+Use kilobytes instead of a human friendly unit. This mode is useful when scripting the batch mode of iotop. Instead of choosing the most appropriate unit iotop will display all sizes in kilobytes.
 .SH SEE ALSO
 .BR top (1),
 .BR vmstat (1)

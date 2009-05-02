@@ -28,21 +28,27 @@ def human_size(size):
         base = 1
     return '%.2f %s' % ((float(size) / base), UNITS[i])
 
-def human_bandwidth(size, duration):
-    return human_size(size and float(size) / duration) + '/s'
+def format_size(options, bytes):
+    if options.kilobytes:
+        return '%.2f K' % (bytes / 1024.0)
+    return human_size(bytes)
 
-def human_stats(process, duration, is_accumulated):
+def format_bandwidth(options, size, duration):
+    return format_size(options, size and float(size) / duration) + '/s'
+
+def format_stats(options, process, duration):
     # Keep in sync with TaskStatsNetlink.members_offsets and
     # IOTopUI.get_data(self)
     def delay2percent(delay): # delay in ns, duration in s
         return '%.2f %%' % min(99.99, delay / (duration * 10000000.0))
-    if is_accumulated:
+    if options.accumulated:
         stats = process.stats_accum
-        display_format = lambda size, duration: human_size(size)
+        display_format = lambda size, duration: format_size(options, size)
         duration = time.time() - process.stats_accum_timestamp
     else:
         stats = process.stats_delta
-        display_format = human_bandwidth
+        display_format = lambda size, duration: format_bandwidth(
+                                                        options, size, duration)
     io_delay = delay2percent(stats.blkio_delay_total)
     swapin_delay = delay2percent(stats.swapin_delay_total)
     read_bytes = display_format(stats.read_bytes, duration)
@@ -179,8 +185,7 @@ class IOTopUI(object):
 
     def get_data(self):
         def format(p):
-            stats = human_stats(p, self.process_list.duration,
-                                self.options.accumulated)
+            stats = format_stats(self.options, p, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
             line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
                 p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
@@ -202,8 +207,8 @@ class IOTopUI(object):
 
     def refresh_display(self, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
-                                        human_bandwidth(total_read, duration),
-                                        human_bandwidth(total_write, duration))
+                          format_bandwidth(self.options, total_read, duration),
+                          format_bandwidth(self.options, total_write, duration))
         if self.options.processes:
             pid = '  PID'
         else:
@@ -318,6 +323,9 @@ def main():
     parser.add_option('-a', '--accumulated', action='store_true',
                       dest='accumulated', default=False,
                       help='show accumulated I/O instead of bandwidth')
+    parser.add_option('-k', '--kilobytes', action='store_true',
+                      dest='kilobytes', default=False,
+                      help='use kilobytes instead of a human friendly unit')
     parser.add_option('--profile', action='store_true', dest='profile',
                       default=False, help=optparse.SUPPRESS_HELP)
 

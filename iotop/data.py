@@ -97,7 +97,7 @@ TASKSTATS_CMD_GET = 1
 TASKSTATS_CMD_ATTR_PID = 1
 
 class TaskStatsNetlink(object):
-    # Keep in sync with human_stats(stats, duration) and pinfo.did_some_io()
+    # Keep in sync with format_stats() and pinfo.did_some_io()
 
     def __init__(self, options):
         self.options = options
