@@ -2,7 +2,7 @@
 ~~~
 o -P is now fully implemented and is dynamically toggled with 'p'
 o Show the I/O priority
-o Added the --accumulated, --kilobytes and --time options
+o Added the --accumulated, --kilobytes, --time and --quiet options
 
 0.2.1
 ~~~~~

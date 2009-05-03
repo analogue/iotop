@@ -19,4 +19,4 @@ Ryan Lovett <ryan@stat.berkeley.edu>
 output file is updated.
 
 Martin Bammer <mrbm74@gmail.com>
-    Initial implementation of the --time option.
+    Initial implementation of the --time and --quiet options.

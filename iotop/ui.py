@@ -108,12 +108,14 @@ class IOTopUI(object):
               iterations < self.options.iterations:
             total = self.process_list.refresh_processes()
             total_read, total_write = total
-            self.refresh_display(total_read, total_write,
+            self.refresh_display(iterations == 0, total_read, total_write,
                                  self.process_list.duration)
             if self.options.iterations is not None:
                 iterations += 1
                 if iterations >= self.options.iterations:
                     break
+            elif iterations == 0:
+                iterations = 1
 
             try:
                 events = poll.poll(self.options.delay_seconds * 1000.0)
@@ -205,7 +207,7 @@ class IOTopUI(object):
             del processes[self.height - 2:]
         return map(format, processes)
 
-    def refresh_display(self, total_read, total_write, duration):
+    def refresh_display(self, first_time, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
                           format_bandwidth(self.options, total_read, duration),
                           format_bandwidth(self.options, total_write, duration))
@@ -221,8 +223,10 @@ class IOTopUI(object):
             current_time = time.strftime('%H:%M:%S ')
             lines = [current_time + l for l in lines]
         if self.options.batch:
-            print summary
-            print ''.join(titles)
+            if self.options.quiet <= 2:
+                print summary
+                if self.options.quiet <= int(first_time):
+                    print ''.join(titles)
             for l in lines:
                 print l
             sys.stdout.flush()
@@ -332,6 +336,8 @@ def main():
                       help='use kilobytes instead of a human friendly unit')
     parser.add_option('-t', '--time', action='store_true', dest='time',
                       help='add a timestamp on each line (implies --batch)')
+    parser.add_option('-q', '--quiet', action='count', dest='quiet',
+                      help='suppress some lines of header (implies --batch)')
     parser.add_option('--profile', action='store_true', dest='profile',
                       default=False, help=optparse.SUPPRESS_HELP)
 
@@ -340,7 +346,7 @@ def main():
         parser.error('Unexpected arguments: ' + ' '.join(args))
     find_uids(options)
     options.pids = options.pids or []
-    options.batch = options.batch or options.time
+    options.batch = options.batch or options.time or options.quiet
 
     main_loop = lambda: run_iotop(options)
 

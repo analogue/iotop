@@ -60,6 +60,22 @@ Use kilobytes instead of a human friendly unit. This mode is useful when scripti
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Add a timestamp on each line (implies --batch). Each line will be prefixed by the current time.
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+suppress some lines of header (implies --batch). This option can be specified up to three times to remove header lines.
+.RS
+.PD 0
+.TP
+.B -q
+column names are only printed on the first iteration,
+.TP
+.B -qq
+column names are never printed,
+.TP
+.B -qqq
+the I/O summary is never printed.
+.PD 1
+.RE
 .SH SEE ALSO
 .BR top (1),
 .BR vmstat (1)
