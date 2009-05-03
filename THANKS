@@ -17,3 +17,6 @@ Göran Uddeborg <goeran@uddeborg.se>
 Ryan Lovett <ryan@stat.berkeley.edu>
     Contributed a bugfix: flush the output in batch mode, so that a potential
 output file is updated.
+
+Martin Bammer <mrbm74@gmail.com>
+    Initial implementation of the --time option.

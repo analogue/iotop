@@ -216,6 +216,10 @@ class IOTopUI(object):
         titles = [pid, '  PRIO', '  USER', '     DISK READ', '  DISK WRITE',
                   '  SWAPIN', '      IO', '    COMMAND']
         lines = self.get_data()
+        if self.options.time:
+            titles = ['    TIME'] + titles
+            current_time = time.strftime('%H:%M:%S ')
+            lines = [current_time + l for l in lines]
         if self.options.batch:
             print summary
             print ''.join(titles)
@@ -326,6 +330,8 @@ def main():
     parser.add_option('-k', '--kilobytes', action='store_true',
                       dest='kilobytes', default=False,
                       help='use kilobytes instead of a human friendly unit')
+    parser.add_option('-t', '--time', action='store_true', dest='time',
+                      help='add a timestamp on each line (implies --batch)')
     parser.add_option('--profile', action='store_true', dest='profile',
                       default=False, help=optparse.SUPPRESS_HELP)
 
@@ -334,6 +340,7 @@ def main():
         parser.error('Unexpected arguments: ' + ' '.join(args))
     find_uids(options)
     options.pids = options.pids or []
+    options.batch = options.batch or options.time
 
     main_loop = lambda: run_iotop(options)
 
