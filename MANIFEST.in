@@ -1,6 +1,7 @@
 include COPYING
 include ChangeLog
 include NEWS
+include README
 include THANKS
 include iotop.1
 include setuptools-0.6c9-py2.4.egg
