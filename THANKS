@@ -20,3 +20,7 @@ output file is updated.
 
 Martin Bammer <mrbm74@gmail.com>
     Initial implementation of the --time and --quiet options.
+
+Piotr Engelking <inkerman42@gmail.com>
+    Reported that iotop's ioprio_get syscall detection was buggy on 32bit
+userspace on a x86_64 kernel.
