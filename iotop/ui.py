@@ -198,7 +198,8 @@ class IOTopUI(object):
             return line
 
         def should_format(p):
-            return not self.options.only or p.did_some_io()
+            return not self.options.only or \
+                   p.did_some_io(self.options.accumulated)
 
         processes = filter(should_format, self.process_list.processes.values())
         key = IOTopUI.sorting_keys[self.sorting_key][0]

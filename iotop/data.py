@@ -261,7 +261,9 @@ class ProcessInfo(DumpableObject):
         cmdline = ' '.join(parts).strip()
         return safe_utf8_decode(cmdline)
 
-    def did_some_io(self):
+    def did_some_io(self, accumulated):
+        if accumulated:
+            return not self.stats_accum.is_all_zero()
         return not all(t.stats_delta.is_all_zero() for
                                                  t in self.threads.itervalues())
 
