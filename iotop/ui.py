@@ -64,19 +64,17 @@ def format_stats(options, process, duration):
 class IOTopUI(object):
     # key, reverse
     sorting_keys = [
-        (lambda p: p.pid, False),
-        (lambda p: p.ioprio_sort_key(), False),
-        (lambda p: p.get_user(), False),
-        (lambda p: p.stats_delta.read_bytes, True),
-        (lambda p: p.stats_delta.write_bytes -
-                   p.stats_delta.cancelled_write_bytes, True),
-        (lambda p: p.stats_delta.swapin_delay_total, True),
+        (lambda p, s: p.pid, False),
+        (lambda p, s: p.ioprio_sort_key(), False),
+        (lambda p, s: p.get_user(), False),
+        (lambda p, s: s.read_bytes, True),
+        (lambda p, s: s.write_bytes - s.cancelled_write_bytes, True),
+        (lambda p, s: s.swapin_delay_total, True),
         # The default sorting (by I/O % time) should show processes doing
         # only writes, without waiting on them
-        (lambda p: p.stats_delta.blkio_delay_total or
-                   int(not(not(p.stats_delta.read_bytes or
-                               p.stats_delta.write_bytes))), True),
-        (lambda p: p.get_cmdline(), False),
+        (lambda p, s: s.blkio_delay_total or
+                      int(not(not(s.read_bytes or s.write_bytes))), True),
+        (lambda p, s: p.get_cmdline(), False),
     ]
 
     def __init__(self, win, process_list, options):
@@ -203,7 +201,12 @@ class IOTopUI(object):
 
         processes = filter(should_format, self.process_list.processes.values())
         key = IOTopUI.sorting_keys[self.sorting_key][0]
-        processes.sort(key=key, reverse=self.sorting_reverse)
+        if self.options.accumulated:
+            stats_lambda = lambda p: p.stats_accum
+        else:
+            stats_lambda = lambda p: p.stats_delta
+        processes.sort(key=lambda p: key(p, stats_lambda(p)),
+                       reverse=self.sorting_reverse)
         if not self.options.batch:
             del processes[self.height - 2:]
         return map(format, processes)

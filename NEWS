@@ -2,6 +2,7 @@
 ~~~~~
 o Fixed the ioprio syscall detection when running on i386/x86_64
 o Fixed interaction between --accumulated and --only
+o Fixed column sorting with --accumulated
 
 0.3
 ~~~
