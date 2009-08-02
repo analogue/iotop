@@ -190,7 +190,14 @@ class IOTopUI(object):
             line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
                 p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
                 write_bytes, swapin_delay, io_delay)
-            line += p.get_cmdline()
+            cmdline = p.get_cmdline()
+            if not self.options.batch:
+                remaining_length = self.width - len(line) - 1
+                if 2 < remaining_length < len(cmdline):
+                    len1 = (remaining_length - 1) // 2
+                    offset2 = -(remaining_length - len1 - 1)
+                    cmdline = cmdline[:len1] + '~' + cmdline[offset2:]
+            line += cmdline
             if not self.options.batch:
                 line = line[:self.width - 1]
             return line
