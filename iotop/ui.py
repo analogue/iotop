@@ -192,14 +192,14 @@ class IOTopUI(object):
                 write_bytes, swapin_delay, io_delay)
             cmdline = p.get_cmdline()
             if not self.options.batch:
-                remaining_length = self.width - len(line) - 1
+                remaining_length = self.width - len(line)
                 if 2 < remaining_length < len(cmdline):
                     len1 = (remaining_length - 1) // 2
                     offset2 = -(remaining_length - len1 - 1)
                     cmdline = cmdline[:len1] + '~' + cmdline[offset2:]
             line += cmdline
             if not self.options.batch:
-                line = line[:self.width - 1]
+                line = line[:self.width]
             return line
 
         def should_format(p):
@@ -243,8 +243,9 @@ class IOTopUI(object):
             sys.stdout.flush()
         else:
             self.win.erase()
-            self.win.addstr(summary)
+            self.win.addstr(summary[:self.width])
             self.win.hline(1, 0, ord(' ') | curses.A_REVERSE, self.width)
+            remaining_cols = self.width
             for i in xrange(len(titles)):
                 attr = curses.A_REVERSE
                 title = titles[i]
@@ -253,10 +254,12 @@ class IOTopUI(object):
                 if i == self.sorting_key:
                     attr |= curses.A_BOLD
                     title += self.sorting_reverse and '>' or '<'
+                title = title[:remaining_cols]
+                remaining_cols -= len(title)
                 self.win.addstr(title, attr)
             for i in xrange(len(lines)):
                 try:
-                    self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
+                    self.win.insstr(i + 2, 0, lines[i].encode('utf-8'))
                 except curses.error:
                     exc_type, value, traceback = sys.exc_info()
                     value = '%s win:%s i:%d line:%s' % \
