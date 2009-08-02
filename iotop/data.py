@@ -65,9 +65,9 @@ class Stats(DumpableObject):
         """Returns a new Stats object built from operator(self, other_stats)"""
         delta_stats = Stats.__new__(Stats)
         for name, offset in Stats.members_offsets:
-            self_value = getattr(self, name)
-            other_value = getattr(other_stats, name)
-            setattr(delta_stats, name, operator((self_value, other_value)))
+            self_value = self.__dict__[name]
+            other_value = other_stats.__dict__[name]
+            delta_stats.__dict__[name] = operator((self_value, other_value))
         return delta_stats
 
     def delta(self, other_stats):
