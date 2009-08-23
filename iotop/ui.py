@@ -9,7 +9,7 @@ import struct
 import sys
 import time
 
-from iotop.data import find_uids, TaskStatsNetlink, ProcessList
+from iotop.data import find_uids, TaskStatsNetlink, ProcessList, Stats
 from iotop.version import VERSION
 
 #
@@ -257,7 +257,13 @@ class IOTopUI(object):
                 title = title[:remaining_cols]
                 remaining_cols -= len(title)
                 self.win.addstr(title, attr)
-            for i in xrange(len(lines)):
+            if Stats.has_blkio_delay_total:
+                status_msg = None
+            else:
+                status_msg = ('CONFIG_TASK_DELAY_ACCT not enabled in kernel, '
+                              'cannot determine IO %')
+            num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
+            for i in xrange(num_lines):
                 try:
                     self.win.insstr(i + 2, 0, lines[i].encode('utf-8'))
                 except curses.error:
@@ -266,6 +272,8 @@ class IOTopUI(object):
                                        (value, self.win.getmaxyx(), i, lines[i])
                     value = str(value).encode('string_escape')
                     raise exc_type, value, traceback
+            if status_msg:
+                self.win.insstr(self.height - 1, 0, status_msg, curses.A_BOLD)
             self.win.refresh()
 
 def run_iotop_window(win, options):

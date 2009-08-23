@@ -56,10 +56,17 @@ class Stats(DumpableObject):
         ('cancelled_write_bytes', 264)
     ]
 
+    has_blkio_delay_total = False
+
     def __init__(self, task_stats_buffer):
         for name, offset in Stats.members_offsets:
             data = task_stats_buffer[offset:offset + 8]
             setattr(self, name, struct.unpack('Q', data)[0])
+
+        # This is a heuristic to detect if CONFIG_TASK_DELAY_ACCT is enabled in
+        # the kernel.
+        if not Stats.has_blkio_delay_total:
+            Stats.has_blkio_delay_total = self.blkio_delay_total != 0
 
     def accumulate(self, other_stats, operator=sum):
         """Returns a new Stats object built from operator(self, other_stats)"""
