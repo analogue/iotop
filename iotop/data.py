@@ -114,11 +114,13 @@ class TaskStatsNetlink(object):
         controller = Controller(self.connection)
         self.family_id = controller.get_family_id('TASKSTATS')
 
-    def get_single_task_stats(self, pid):
-        request = GeNlMessage(self.family_id, cmd=TASKSTATS_CMD_GET,
-                              attrs=[U32Attr(TASKSTATS_CMD_ATTR_PID, pid)],
-                              flags=NLM_F_REQUEST)
-        request.send(self.connection)
+    def build_task_stats_request(self, tid):
+        return GeNlMessage(self.family_id, cmd=TASKSTATS_CMD_GET,
+                           attrs=[U32Attr(TASKSTATS_CMD_ATTR_PID, tid)],
+                           flags=NLM_F_REQUEST)
+
+    def get_single_task_stats(self, thread):
+        thread.task_stats_request.send(self.connection)
         try:
             reply = self.connection.recv()
         except OSError, e:
@@ -170,11 +172,12 @@ def safe_utf8_decode(s):
 
 class ThreadInfo(DumpableObject):
     """Stats for a single thread"""
-    def __init__(self, tid):
+    def __init__(self, tid, taskstats_connection):
         self.tid = tid
         self.mark = True
         self.stats_total = None
         self.stats_delta = Stats.__new__(Stats)
+        self.task_stats_request = taskstats_connection.build_task_stats_request(tid)
 
     def get_ioprio(self):
         return ioprio.get(self.tid)
@@ -285,10 +288,10 @@ class ProcessInfo(DumpableObject):
     def ioprio_sort_key(self):
         return ioprio.sort_key(self.get_ioprio())
 
-    def get_thread(self, tid):
+    def get_thread(self, tid, taskstats_connection):
         thread = self.threads.get(tid, None)
         if not thread:
-            thread = ThreadInfo(tid)
+            thread = ThreadInfo(tid, taskstats_connection)
             self.threads[tid] = thread
         return thread
 
@@ -371,8 +374,8 @@ class ProcessList(DumpableObject):
             if not process:
                 continue
             for tid in self.list_tids(tgid):
-                thread = process.get_thread(tid)
-                stats = self.taskstats_connection.get_single_task_stats(tid)
+                thread = process.get_thread(tid, self.taskstats_connection)
+                stats = self.taskstats_connection.get_single_task_stats(thread)
                 if stats:
                     thread.update_stats(stats)
                     thread.mark = False
