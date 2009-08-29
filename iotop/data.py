@@ -68,20 +68,18 @@ class Stats(DumpableObject):
         if not Stats.has_blkio_delay_total:
             Stats.has_blkio_delay_total = self.blkio_delay_total != 0
 
-    def accumulate(self, other_stats, operator=sum):
-        """Returns a new Stats object built from operator(self, other_stats)"""
-        delta_stats = Stats.__new__(Stats)
+    def accumulate(self, other_stats, destination, operator=sum):
+        """Update destination from operator(self, other_stats)"""
         for name, offset in Stats.members_offsets:
             self_value = self.__dict__[name]
             other_value = other_stats.__dict__[name]
-            delta_stats.__dict__[name] = operator((self_value, other_value))
-        return delta_stats
+            destination.__dict__[name] = operator((self_value, other_value))
 
-    def delta(self, other_stats):
-        """Returns self - other_stats"""
+    def delta(self, other_stats, destination):
+        """Update destination with self - other_stats"""
         def subtract((me, other)):
             return me - other
-        return self.accumulate(other_stats, operator=subtract)
+        return self.accumulate(other_stats, destination, operator=subtract)
 
     def is_all_zero(self):
         for name, offset in Stats.members_offsets:
@@ -172,7 +170,7 @@ class ThreadInfo(DumpableObject):
         self.tid = tid
         self.mark = True
         self.stats_total = None
-        self.stats_delta = None
+        self.stats_delta = Stats.__new__(Stats)
 
     def get_ioprio(self):
         return ioprio.get(self.tid)
@@ -180,7 +178,7 @@ class ThreadInfo(DumpableObject):
     def update_stats(self, stats):
         if not self.stats_total:
             self.stats_total = stats
-        self.stats_delta = stats.delta(self.stats_total)
+        stats.delta(self.stats_total, self.stats_delta)
         self.stats_total = stats
 
 
@@ -296,7 +294,7 @@ class ProcessInfo(DumpableObject):
             if thread.mark:
                 del self.threads[tid]
             else:
-                stats_delta = stats_delta.accumulate(thread.stats_delta)
+                stats_delta.accumulate(thread.stats_delta, stats_delta)
 
         nr_threads = len(self.threads)
         if not nr_threads:
@@ -306,7 +304,7 @@ class ProcessInfo(DumpableObject):
         stats_delta.swapin_delay_total /= nr_threads
 
         self.stats_delta = stats_delta
-        self.stats_accum = self.stats_accum.accumulate(self.stats_delta)
+        self.stats_accum.accumulate(self.stats_delta, self.stats_accum)
 
         return True
 
