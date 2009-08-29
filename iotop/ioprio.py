@@ -50,9 +50,12 @@ def ioprio_data(ioprio):
 sched_getscheduler = ctypes_handle.sched_getscheduler
 SCHED_OTHER, SCHED_FIFO, SCHED_RR, SCHED_BATCH, SCHED_ISO, SCHED_IDLE = range(6)
 
+getpriority = ctypes_handle.getpriority
+PRIO_PROCESS = 0
+
 def get_ioprio_from_sched(pid):
     scheduler = sched_getscheduler(pid)
-    nice = int(open('/proc/%d/stat' % pid).read().split()[18])
+    nice = getpriority(PRIO_PROCESS, pid)
     ioprio_nice = (nice + 20) / 5
 
     if scheduler in (SCHED_FIFO, SCHED_RR):
