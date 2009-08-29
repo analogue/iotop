@@ -327,7 +327,8 @@ which the thread is running (set using the ionice command).
 
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, p to toggle the --processes
-option, a to toggle the --accumulated option, q to quit, any other key to force a refresh.''' % sys.argv[0]
+option, a to toggle the --accumulated option, q to quit, any other key to force
+a refresh.''' % sys.argv[0]
 
 def main():
     locale.setlocale(locale.LC_ALL, '')

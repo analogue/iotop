@@ -73,11 +73,16 @@ class Stats(DumpableObject):
         dd = destination.__dict__
         sd = self.__dict__
         od = other_stats.__dict__
-        dd['blkio_delay_total'] = operator((sd['blkio_delay_total'], od['blkio_delay_total']))
-        dd['swapin_delay_total'] = operator((sd['swapin_delay_total'], od['swapin_delay_total']))
-        dd['read_bytes'] = operator((sd['read_bytes'], od['read_bytes']))
-        dd['write_bytes'] = operator((sd['write_bytes'], od['write_bytes']))
-        dd['cancelled_write_bytes'] = operator((sd['cancelled_write_bytes'], od['cancelled_write_bytes']))
+        dd['blkio_delay_total'] = operator((sd['blkio_delay_total'],
+                                            od['blkio_delay_total']))
+        dd['swapin_delay_total'] = operator((sd['swapin_delay_total'],
+                                             od['swapin_delay_total']))
+        dd['read_bytes'] = operator((sd['read_bytes'],
+                                     od['read_bytes']))
+        dd['write_bytes'] = operator((sd['write_bytes'],
+                                      od['write_bytes']))
+        dd['cancelled_write_bytes'] = operator((sd['cancelled_write_bytes'],
+                                                od['cancelled_write_bytes']))
 
     def delta(self, other_stats, destination):
         """Update destination with self - other_stats"""
@@ -114,7 +119,7 @@ class TaskStatsNetlink(object):
         controller = Controller(self.connection)
         self.family_id = controller.get_family_id('TASKSTATS')
 
-    def build_task_stats_request(self, tid):
+    def build_request(self, tid):
         return GeNlMessage(self.family_id, cmd=TASKSTATS_CMD_GET,
                            attrs=[U32Attr(TASKSTATS_CMD_ATTR_PID, tid)],
                            flags=NLM_F_REQUEST)
@@ -177,7 +182,7 @@ class ThreadInfo(DumpableObject):
         self.mark = True
         self.stats_total = None
         self.stats_delta = Stats.__new__(Stats)
-        self.task_stats_request = taskstats_connection.build_task_stats_request(tid)
+        self.task_stats_request = taskstats_connection.build_request(tid)
 
     def get_ioprio(self):
         return ioprio.get(self.tid)
