@@ -233,6 +233,7 @@ class ProcessInfo(DumpableObject):
         if uid != self.uid:
             # Maybe the process called setuid()
             self.user = None
+            self.uid = uid
         return uid
 
     def get_user(self):
