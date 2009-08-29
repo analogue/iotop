@@ -1,6 +1,7 @@
 import curses
 import errno
 import locale
+import math
 import optparse
 import os
 import pwd
@@ -19,14 +20,10 @@ from iotop.version import VERSION
 UNITS = ['B', 'K', 'M', 'G', 'T', 'P', 'E']
 
 def human_size(size):
-    for i in xrange(len(UNITS) - 1, 0, -1):
-        base = 1 << (10 * i)
-        if 2 * base < size:
-            break
-    else:
-        i = 0
-        base = 1
-    return '%.2f %s' % ((float(size) / base), UNITS[i])
+    if not size:
+        return '0.00 B'
+    expo = int(math.log(size / 2, 2) / 10)
+    return '%.2f %s' % ((float(size) / (1 << (10 * expo))), UNITS[expo])
 
 def format_size(options, bytes):
     if options.kilobytes:
