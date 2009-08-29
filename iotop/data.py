@@ -349,12 +349,16 @@ class ProcessList(DumpableObject):
             for pid in self.options.pids:
                 yield pid
 
-        pattern = '/proc/[0-9]*'
-        if not self.options.processes:
-            pattern += '/task/*'
-
-        for path in glob.iglob(pattern):
-            yield int(os.path.basename(path))
+        tgids = os.listdir('/proc')
+        if self.options.processes:
+            for tgid in tgids:
+                if '0' <= tgid[0] <= '9':
+                    yield int(tgid)
+        else:
+            for tgid in tgids:
+                if '0' <= tgid[0] <= '9':
+                    for tid in os.listdir('/proc/' + tgid + '/task'):
+                        yield int(tid)
 
     def list_tids(self, tgid):
         if not self.options.processes:
