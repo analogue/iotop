@@ -59,36 +59,27 @@ class Stats(DumpableObject):
     has_blkio_delay_total = False
 
     def __init__(self, task_stats_buffer):
+        sd = self.__dict__
         for name, offset in Stats.members_offsets:
             data = task_stats_buffer[offset:offset + 8]
-            setattr(self, name, struct.unpack('Q', data)[0])
+            sd[name] = struct.unpack('Q', data)[0]
 
         # This is a heuristic to detect if CONFIG_TASK_DELAY_ACCT is enabled in
         # the kernel.
         if not Stats.has_blkio_delay_total:
             Stats.has_blkio_delay_total = self.blkio_delay_total != 0
 
-    def accumulate(self, other_stats, destination, operator=sum):
+    def accumulate(self, other_stats, destination, coeff=1):
         """Update destination from operator(self, other_stats)"""
         dd = destination.__dict__
         sd = self.__dict__
         od = other_stats.__dict__
-        dd['blkio_delay_total'] = operator((sd['blkio_delay_total'],
-                                            od['blkio_delay_total']))
-        dd['swapin_delay_total'] = operator((sd['swapin_delay_total'],
-                                             od['swapin_delay_total']))
-        dd['read_bytes'] = operator((sd['read_bytes'],
-                                     od['read_bytes']))
-        dd['write_bytes'] = operator((sd['write_bytes'],
-                                      od['write_bytes']))
-        dd['cancelled_write_bytes'] = operator((sd['cancelled_write_bytes'],
-                                                od['cancelled_write_bytes']))
+        for member, offset in Stats.members_offsets:
+            dd[member] = sd[member] + coeff * od[member]
 
     def delta(self, other_stats, destination):
         """Update destination with self - other_stats"""
-        def subtract((me, other)):
-            return me - other
-        return self.accumulate(other_stats, destination, operator=subtract)
+        return self.accumulate(other_stats, destination, coeff=-1)
 
     def is_all_zero(self):
         for name, offset in Stats.members_offsets:
