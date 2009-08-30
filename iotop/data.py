@@ -82,16 +82,18 @@ class Stats(DumpableObject):
         return self.accumulate(other_stats, destination, coeff=-1)
 
     def is_all_zero(self):
+        sd = self.__dict__
         for name, offset in Stats.members_offsets:
-            if getattr(self, name) != 0:
+            if sd[name] is not 0:
                 return False
         return True
 
     @staticmethod
     def build_all_zero():
         stats = Stats.__new__(Stats)
+        std = stats.__dict__
         for name, offset in Stats.members_offsets:
-            setattr(stats, name, 0)
+            std[name] = 0
         return stats
 
 #
