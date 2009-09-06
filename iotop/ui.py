@@ -184,9 +184,13 @@ class IOTopUI(object):
         def format(p):
             stats = format_stats(self.options, p, self.process_list.duration)
             io_delay, swapin_delay, read_bytes, write_bytes = stats
-            line = '%5d %4s %-8s %11s %11s %7s %7s ' % (
+            if Stats.has_blkio_delay_total:
+                delay_stats = '%7s %7s ' % (swapin_delay, io_delay)
+            else:
+                delay_stats = ' ?unavailable?  '
+            line = '%5d %4s %-8s %11s %11s %s' % (
                 p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
-                write_bytes, swapin_delay, io_delay)
+                write_bytes, delay_stats)
             cmdline = p.get_cmdline()
             if not self.options.batch:
                 remaining_length = self.width - len(line)
@@ -258,7 +262,7 @@ class IOTopUI(object):
                 status_msg = None
             else:
                 status_msg = ('CONFIG_TASK_DELAY_ACCT not enabled in kernel, '
-                              'cannot determine IO %')
+                              'cannot determine SWAPIN and IO %')
             num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
             for i in xrange(num_lines):
                 try:
