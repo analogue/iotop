@@ -286,7 +286,7 @@ class ProcessInfo(DumpableObject):
         priorities = set(t.get_ioprio() for t in self.threads.itervalues())
         if len(priorities) == 1:
             return priorities.pop()
-        return '?'
+        return '?dif'
 
     def set_ioprio(self, ioprio_class, ioprio_data):
         for thread in self.threads.itervalues():
