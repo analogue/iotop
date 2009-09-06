@@ -9,10 +9,6 @@ import struct
 import sys
 import time
 
-from iotop import ioprio, vmstat
-from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
-from genetlink import Controller, GeNlMessage
-
 #
 # Check for requirements:
 #   o Python >= 2.5 for AF_NETLINK sockets
@@ -36,6 +32,10 @@ if not python25 or not ioaccounting:
              'CONFIG_TASK_IO_ACCOUNTING):', \
           boolean2string(ioaccounting)
     sys.exit(1)
+
+from iotop import ioprio, vmstat
+from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
+from genetlink import Controller, GeNlMessage
 
 class DumpableObject(object):
     """Base class for all objects that allows easy introspection when printed"""
