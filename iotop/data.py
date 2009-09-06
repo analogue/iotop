@@ -180,6 +180,10 @@ class ThreadInfo(DumpableObject):
     def get_ioprio(self):
         return ioprio.get(self.tid)
 
+    def set_ioprio(self, ioprio_class, ioprio_data):
+        return ioprio.set_ioprio(ioprio.IOPRIO_WHO_PROCESS, self.tid,
+                                 ioprio_class, ioprio_data)
+
     def update_stats(self, stats):
         if not self.stats_total:
             self.stats_total = stats
@@ -283,6 +287,10 @@ class ProcessInfo(DumpableObject):
         if len(priorities) == 1:
             return priorities.pop()
         return '?'
+
+    def set_ioprio(self, ioprio_class, ioprio_data):
+        for thread in self.threads.itervalues():
+            thread.set_ioprio(ioprio_class, ioprio_data)
 
     def ioprio_sort_key(self):
         return ioprio.sort_key(self.get_ioprio())

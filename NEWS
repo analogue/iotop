@@ -1,7 +1,8 @@
 0.3.2
 ~~~~~
-o Split long command lines in the middle instead of cutting them at the end.
+o Split long command lines in the middle instead of cutting them at the end
 o Added a heuristic to detect kernels without CONFIG_TASK_DELAY_ACCT
+o The I/O nice of a process/thread can be changed with the 'i' key
 
 0.3.1
 ~~~~~

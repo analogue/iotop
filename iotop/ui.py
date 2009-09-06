@@ -11,7 +11,10 @@ import sys
 import time
 
 from iotop.data import find_uids, TaskStatsNetlink, ProcessList, Stats
+from iotop.data import ThreadInfo
 from iotop.version import VERSION
+import ioprio
+from ioprio import IoprioSetError
 
 #
 # Utility functions for the UI
@@ -53,6 +56,16 @@ def format_stats(options, process, duration):
     written_bytes = max(0, written_bytes)
     write_bytes = display_format(written_bytes, duration)
     return io_delay, swapin_delay, read_bytes, write_bytes
+
+#
+# UI Exceptions
+#
+
+class CancelInput(Exception): pass
+class InvalidInt(Exception): pass
+class InvalidPid(Exception): pass
+class InvalidTid(Exception): pass
+class InvalidIoprioData(Exception): pass
 
 #
 # The UI
@@ -136,6 +149,110 @@ class IOTopUI(object):
         if orig_sorting_key != self.sorting_key:
             self.sorting_reverse = IOTopUI.sorting_keys[self.sorting_key][1]
 
+    # I wonder if switching to urwid for the display would be better here
+
+    def prompt_str(self, prompt, default=None, empty_is_cancel=True):
+        self.win.hline(1, 0, ord(' ') | curses.A_NORMAL, self.width)
+        self.win.addstr(1, 0, prompt, curses.A_BOLD)
+        self.win.refresh()
+        curses.echo()
+        curses.curs_set(1)
+        inp = self.win.getstr(1, len(prompt))
+        curses.curs_set(0)
+        curses.noecho()
+        if inp not in (None, ''):
+            return inp
+        if empty_is_cancel:
+            raise CancelInput()
+        return default
+
+    def prompt_int(self, prompt, default = None, empty_is_cancel = True):
+        inp = self.prompt_str(prompt, default, empty_is_cancel)
+        try:
+            return int(inp)
+        except ValueError:
+            raise InvalidInt()
+
+    def prompt_pid(self):
+        try:
+            return self.prompt_int('PID to ionice: ')
+        except InvalidInt:
+            raise InvalidPid()
+        except CancelInput:
+            raise
+
+    def prompt_tid(self):
+        try:
+            return self.prompt_int('TID to ionice: ')
+        except InvalidInt:
+            raise InvalidTid()
+        except CancelInput:
+            raise
+
+    def prompt_data(self, ioprio_data):
+        try:
+            if ioprio_data is not None:
+                inp = self.prompt_int('I/O priority data (0-7, currently %s): '
+                                      % ioprio_data, ioprio_data, False)
+            else:
+                inp = self.prompt_int('I/O priority data (0-7): ', None, False)
+        except InvalidInt:
+            raise InvalidIoprioData()
+        if inp < 0 or inp > 7:
+            raise InvalidIoprioData()
+        return inp
+
+    def prompt_set(self, prompt, display_list, ret_list, selected):
+        try:
+            selected = ret_list.index(selected)
+        except ValueError:
+            selected = -1
+        set_len = len(display_list) - 1
+        while True:
+            self.win.hline(1, 0, ord(' ') | curses.A_NORMAL, self.width)
+            self.win.insstr(1, 0, prompt, curses.A_BOLD)
+            offset = len(prompt)
+            for i, item in enumerate(display_list):
+                display = ' %s ' % item
+                if i is selected:
+                    attr = curses.A_REVERSE
+                else:
+                    attr = curses.A_NORMAL
+                self.win.insstr(1, offset, display, attr)
+                offset += len(display)
+            while True:
+                key = self.win.getch()
+                if key in (curses.KEY_LEFT, ord('l')) and selected > 0:
+                    selected -= 1
+                    break
+                elif key in (curses.KEY_RIGHT, ord('r')) and selected < set_len:
+                    selected += 1
+                    break
+                elif key in (curses.KEY_ENTER, ord('\n'), ord('\r')):
+                    return ret_list[selected]
+                elif key in (27, curses.KEY_CANCEL, curses.KEY_CLOSE,
+                             curses.KEY_EXIT, ord('q'), ord('Q')):
+                    raise CancelInput()
+
+    def prompt_class(self, ioprio_class=None):
+        prompt = 'I/O priority class: '
+        classes_prompt = ['Real-time', 'Best-effort', 'Idle']
+        classes_ret = ['rt', 'be', 'idle']
+        if ioprio_class is None:
+            ioprio_class = 2
+        inp = self.prompt_set(prompt, classes_prompt, classes_ret, ioprio_class)
+        return inp
+
+    def prompt_error(self, error = 'Error!'):
+        self.win.hline(1, 0, ord(' ') | curses.A_NORMAL, self.width)
+        self.win.insstr(1, 0, '  %s  ' % error, curses.A_REVERSE)
+        self.win.refresh()
+        time.sleep(1)
+
+    def prompt_clear(self):
+        self.win.hline(1, 0, ord(' ') | curses.A_NORMAL, self.width)
+        self.win.refresh()
+
     def handle_key(self, key):
         def toggle_accumulated():
             self.options.accumulated ^= True
@@ -146,6 +263,41 @@ class IOTopUI(object):
             self.options.processes ^= True
             self.process_list.clear()
             self.process_list.refresh_processes()
+        def ionice():
+            try:
+                if self.options.processes:
+                    pid = self.prompt_pid()
+                    exec_unit = self.process_list.get_process(pid)
+                else:
+                    tid = self.prompt_tid()
+                    exec_unit = ThreadInfo(tid,
+                                         self.process_list.taskstats_connection)
+                ioprio_value = exec_unit.get_ioprio()
+                (ioprio_class, ioprio_data) = \
+                                          ioprio.to_class_and_data(ioprio_value)
+                ioprio_class = self.prompt_class(ioprio_class)
+                if ioprio_class == 'idle':
+                    ioprio_data = 0
+                else:
+                    ioprio_data = self.prompt_data(ioprio_data)
+                exec_unit.set_ioprio(ioprio_class, ioprio_data)
+                self.process_list.clear()
+                self.process_list.refresh_processes()
+            except IoprioSetError, e:
+                self.prompt_error('Error setting I/O priority: %s' % e.err)
+            except InvalidPid:
+                self.prompt_error('Invalid process id!')
+            except InvalidTid:
+                self.prompt_error('Invalid thread id!')
+            except InvalidIoprioData:
+                self.prompt_error('Invalid I/O priority data!')
+            except InvalidInt:
+                self.prompt_error('Invalid integer!')
+            except CancelInput:
+                self.prompt_clear()
+            else:
+                self.prompt_clear()
+
         key_bindings = {
             ord('q'):
                 lambda: sys.exit(0),
@@ -167,6 +319,10 @@ class IOTopUI(object):
                 toggle_processes,
             ord('P'):
                 toggle_processes,
+            ord('i'):
+                ionice,
+            ord('I'):
+                ionice,
             curses.KEY_LEFT:
                 lambda: self.adjust_sorting_key(-1),
             curses.KEY_RIGHT:
