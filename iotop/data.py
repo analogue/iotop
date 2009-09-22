@@ -84,7 +84,7 @@ class Stats(DumpableObject):
     def is_all_zero(self):
         sd = self.__dict__
         for name, offset in Stats.members_offsets:
-            if sd[name] is not 0:
+            if sd[name] != 0:
                 return False
         return True
 
