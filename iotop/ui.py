@@ -516,7 +516,7 @@ def main():
                       help='use kilobytes instead of a human friendly unit')
     parser.add_option('-t', '--time', action='store_true', dest='time',
                       help='add a timestamp on each line (implies --batch)')
-    parser.add_option('-q', '--quiet', action='count', dest='quiet',
+    parser.add_option('-q', '--quiet', action='count', dest='quiet', default=0,
                       help='suppress some lines of header (implies --batch)')
     parser.add_option('--profile', action='store_true', dest='profile',
                       default=False, help=optparse.SUPPRESS_HELP)
