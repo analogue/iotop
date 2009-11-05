@@ -244,10 +244,9 @@ class ProcessInfo(DumpableObject):
 
     def get_proc_status_name(self):
         try:
-            proc_status = open('/proc/%d/status' % self.pid)
+            first_line = open('/proc/%d/status' % self.pid).readline()
         except IOError:
             return '{no such process}'
-        first_line = proc_status.readline()
         prefix = 'Name:\t'
         if first_line.startswith(prefix):
             name = first_line[6:].strip()

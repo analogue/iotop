@@ -24,3 +24,6 @@ Martin Bammer <mrbm74@gmail.com>
 Piotr Engelking <inkerman42@gmail.com>
     Reported that iotop's ioprio_get syscall detection was buggy on 32bit
 userspace on a x86_64 kernel.
+
+Gabriel Redner <gredner@gmail.com>
+    Reported a crash were iotop could open /proc/PID/status but not read it as the process disappeared by then.
