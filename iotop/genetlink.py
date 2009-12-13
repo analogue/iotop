@@ -42,14 +42,16 @@ class GeNlMessage(Message):
         self.cmd = cmd
         self.attrs = attrs
         self.family = family
-        Message.__init__(self, family, flags=flags, payload=[GenlHdr(self.cmd)]+attrs)
+        Message.__init__(self, family, flags=flags,
+                         payload=[GenlHdr(self.cmd)]+attrs)
 
 class Controller:
     def __init__(self, conn):
         self.conn = conn
     def get_family_id(self, family):
         a = NulStrAttr(CTRL_ATTR_FAMILY_NAME, family)
-        m = GeNlMessage(GENL_ID_CTRL, CTRL_CMD_GETFAMILY, flags=NLM_F_REQUEST, attrs=[a])
+        m = GeNlMessage(GENL_ID_CTRL, CTRL_CMD_GETFAMILY,
+                        flags=NLM_F_REQUEST, attrs=[a])
         m.send(self.conn)
         m = self.conn.recv()
         gh = _genl_hdr_parse(m.payload[:4])
