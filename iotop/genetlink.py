@@ -1,7 +1,7 @@
 '''
 Netlink message generation/parsing
 
-Copyright 2007		Johannes Berg <johannes@sipsolutions.net>
+Copyright 2007        Johannes Berg <johannes@sipsolutions.net>
 
 GPLv2
 '''
@@ -9,21 +9,21 @@ GPLv2
 import struct
 from netlink import *
 
-CTRL_CMD_UNSPEC		= 0
-CTRL_CMD_NEWFAMILY	= 1
-CTRL_CMD_DELFAMILY	= 2
-CTRL_CMD_GETFAMILY	= 3
-CTRL_CMD_NEWOPS		= 4
-CTRL_CMD_DELOPS		= 5
-CTRL_CMD_GETOPS		= 6
+CTRL_CMD_UNSPEC       = 0
+CTRL_CMD_NEWFAMILY    = 1
+CTRL_CMD_DELFAMILY    = 2
+CTRL_CMD_GETFAMILY    = 3
+CTRL_CMD_NEWOPS       = 4
+CTRL_CMD_DELOPS       = 5
+CTRL_CMD_GETOPS       = 6
 
-CTRL_ATTR_UNSPEC	= 0
-CTRL_ATTR_FAMILY_ID	= 1
-CTRL_ATTR_FAMILY_NAME	= 2
-CTRL_ATTR_VERSION	= 3
-CTRL_ATTR_HDRSIZE	= 4
-CTRL_ATTR_MAXATTR	= 5
-CTRL_ATTR_OPS		= 6
+CTRL_ATTR_UNSPEC      = 0
+CTRL_ATTR_FAMILY_ID   = 1
+CTRL_ATTR_FAMILY_NAME = 2
+CTRL_ATTR_VERSION     = 3
+CTRL_ATTR_HDRSIZE     = 4
+CTRL_ATTR_MAXATTR     = 5
+CTRL_ATTR_OPS         = 6
 
 class GenlHdr:
     def __init__(self, cmd, version = 0):
@@ -35,7 +35,7 @@ class GenlHdr:
 def _genl_hdr_parse(data):
     return GenlHdr(*struct.unpack("BBxx", data))
 
-GENL_ID_CTRL		= NLMSG_MIN_TYPE
+GENL_ID_CTRL        = NLMSG_MIN_TYPE
 
 class GeNlMessage(Message):
     def __init__(self, family, cmd, attrs=[], flags=0):
