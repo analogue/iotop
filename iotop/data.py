@@ -278,8 +278,10 @@ class ProcessInfo(DumpableObject):
     def did_some_io(self, accumulated):
         if accumulated:
             return not self.stats_accum.is_all_zero()
-        return not all(t.stats_delta.is_all_zero() for
-                                                 t in self.threads.itervalues())
+        for t in self.threads.itervalues():
+            if not t.stats_delta.is_all_zero():
+                return True
+        return False
 
     def get_ioprio(self):
         priorities = set(t.get_ioprio() for t in self.threads.itervalues())
