@@ -61,7 +61,7 @@ except socket.error:
             return addr.nl_pid, addr.nl_groups;
 
         def _nl_send(descriptor, msg):
-            return libc.send(descriptor.fileno(), msg, len(msg));
+            return libc.send(descriptor.fileno(), msg, len(msg), 0);
 
         def _nl_recv(descriptor, bufs=16384):
             addr = SOCKADDR_NL(0, 0, 0, 0)
