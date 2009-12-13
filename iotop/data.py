@@ -11,22 +11,15 @@ import time
 
 #
 # Check for requirements:
-#   o Python >= 2.5 for AF_NETLINK sockets
 #   o Linux >= 2.6.20 with I/O accounting
 #
-try:
-    socket.NETLINK_ROUTE
-    python25 = True
-except AttributeError:
-    python25 = False
 
 ioaccounting = os.path.exists('/proc/self/io')
 
-if not python25 or not ioaccounting:
+if not ioaccounting:
     def boolean2string(boolean):
         return boolean and 'Found' or 'Not found'
     print 'Could not run iotop as some of the requirements are not met:'
-    print '- Python >= 2.5 for AF_NETLINK support:', boolean2string(python25)
     print '- Linux >= 2.6.20 with I/O accounting support ' \
              '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
              'CONFIG_TASK_IO_ACCOUNTING):', \

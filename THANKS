@@ -27,3 +27,6 @@ userspace on a x86_64 kernel.
 
 Gabriel Redner <gredner@gmail.com>
     Reported a crash were iotop could open /proc/PID/status but not read it as the process disappeared by then.
+
+Jiri Olsa <jolsa@redhat.com>
+    Wrote the support for python2.4 with the ctypes module.

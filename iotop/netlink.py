@@ -25,17 +25,56 @@ except socket.error:
     # or fall back to the _netlink C module
     try:
         import _netlink
+        def _nl_bind(descriptor, addr):
+            _netlink.bind(descriptor.fileno(), addr[1])
+        def _nl_getsockname(descriptor):
+            return _netlink.getsockname(descriptor.fileno())
+        def _nl_send(descriptor, msg):
+            _netlink.send(descriptor.fileno(), msg)
+        def _nl_recv(descriptor, bufs=16384):
+            return _netlink.recvfrom(descriptor.fileno(), bufs)
     except ImportError:
-        raise ImportError("This is neither python 2.5 nor is "
-                          "the _netlink C module available!")
-    def _nl_bind(descriptor, addr):
-        _netlink.bind(descriptor.fileno(), addr[1])
-    def _nl_getsockname(descriptor):
-        return _netlink.getsockname(descriptor.fileno())
-    def _nl_send(descriptor, msg):
-        _netlink.send(descriptor.fileno(), msg)
-    def _nl_recv(descriptor, bufs=16384):
-        return _netlink.recvfrom(descriptor.fileno(), bufs)
+        # or fall back to the ctypes module
+        import ctypes
+        import os
+
+        libc = ctypes.CDLL(None)
+
+        class SOCKADDR_NL(ctypes.Structure):
+            _fields_ = [("nl_family", ctypes.c_ushort),
+                        ("nl_pad",    ctypes.c_ushort),
+                        ("nl_pid",    ctypes.c_int),
+                        ("nl_groups", ctypes.c_int)]
+
+        def _nl_bind(descriptor, addr):
+            addr = SOCKADDR_NL(socket.AF_NETLINK, 0, os.getpid(), 0)
+            return libc.bind(descriptor.fileno(),
+                             ctypes.pointer(addr),
+                             ctypes.sizeof(addr))
+
+        def _nl_getsockname(descriptor):
+            addr = SOCKADDR_NL(0, 0, 0, 0)
+            len = ctypes.c_int(ctypes.sizeof(addr));
+            libc.getsockname(descriptor.fileno(),
+                             ctypes.pointer(addr),
+                             ctypes.pointer(len))
+            return addr.nl_pid, addr.nl_groups;
+
+        def _nl_send(descriptor, msg):
+            return libc.send(descriptor.fileno(), msg, len(msg));
+
+        def _nl_recv(descriptor, bufs=16384):
+            addr = SOCKADDR_NL(0, 0, 0, 0)
+            len = ctypes.c_int(ctypes.sizeof(addr))
+            buf = ctypes.create_string_buffer(bufs)
+
+            r = libc.recvfrom(descriptor.fileno(),
+                              buf, bufs, 0,
+                              ctypes.pointer(addr), ctypes.pointer(len))
+
+            ret = ctypes.string_at(ctypes.pointer(buf), r)
+            return ret, (addr.nl_pid, addr.nl_groups)
+
 
 # flags
 NLM_F_REQUEST  = 1
