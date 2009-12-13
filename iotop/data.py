@@ -12,18 +12,27 @@ import time
 #
 # Check for requirements:
 #   o Linux >= 2.6.20 with I/O accounting
+#   o Python >= 2.5 or Python 2.4 + ctypes
 #
 
 ioaccounting = os.path.exists('/proc/self/io')
+try:
+    import ctypes
+except ImportError:
+    has_ctypes = False
+else:
+    has_ctypes = True
 
-if not ioaccounting:
+if not ioaccounting or not has_ctypes:
     def boolean2string(boolean):
         return boolean and 'Found' or 'Not found'
     print 'Could not run iotop as some of the requirements are not met:'
     print '- Linux >= 2.6.20 with I/O accounting support ' \
              '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
-             'CONFIG_TASK_IO_ACCOUNTING):', \
-          boolean2string(ioaccounting)
+             'CONFIG_TASK_IO_ACCOUNTING):', boolean2string(ioaccounting)
+    print '- Python >= 2.5 or Python 2.4 with the ctypes module:', \
+        boolean2string(has_ctypes)
+
     sys.exit(1)
 
 from iotop import ioprio, vmstat
