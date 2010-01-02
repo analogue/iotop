@@ -23,10 +23,16 @@ from ioprio import IoprioSetError
 UNITS = ['B', 'K', 'M', 'G', 'T', 'P', 'E']
 
 def human_size(size):
-    if not size:
+    if size > 0:
+        sign = ''
+    elif size < 0:
+        sign = '-'
+        size = -size
+    else:
         return '0.00 B'
+
     expo = int(math.log(size / 2, 2) / 10)
-    return '%.2f %s' % ((float(size) / (1 << (10 * expo))), UNITS[expo])
+    return '%s%.2f %s' % (sign, (float(size) / (1 << (10 * expo))), UNITS[expo])
 
 def format_size(options, bytes):
     if options.kilobytes:
