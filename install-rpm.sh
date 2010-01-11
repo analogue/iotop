@@ -7,7 +7,7 @@
 #
 
 # this is, what dist.py normally does
-./setup.py install --root=${RPM_BUILD_ROOT} --record="INSTALLED_FILES"
+./setup.py install --prefix=/usr --root=${RPM_BUILD_ROOT} --record="INSTALLED_FILES"
 
 # catch compressed man pages
 sed -i -e 's@\(.\+/man/man[[:digit:]]/.\+\.[[:digit:]]\)$@\1*@' "INSTALLED_FILES"

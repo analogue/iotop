@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-
-sys.path.insert(0, 'setuptools-0.6c9-py2.4.egg')
-from setuptools import setup, find_packages
+from distutils.core import setup
 from iotop.version import VERSION
 
 setup(name='iotop',
@@ -17,7 +14,6 @@ process is the I/O going on.''',
       url='http://guichaz.free.fr/iotop',
       scripts=['bin/iotop'],
       data_files=[('share/man/man1', ['iotop.1'])],
-      packages=find_packages(),
-      include_package_data=True,
+      packages=['iotop'],
       license='GPL'
 )

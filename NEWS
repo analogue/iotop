@@ -1,6 +1,7 @@
 0.4
 ~~~
 o Compatibility with python2.4 using the ctypes module
+o Stopped using setuptools in favor of straight distutils
 
 0.3.2
 ~~~~~
