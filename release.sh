@@ -16,4 +16,7 @@ cd "$TEMPDIR"
 rm "$PACKAGE-$VERSION/release.sh"
 tar czf "$DIR/dist/$PACKAGE-$VERSION.tar.gz" "$PACKAGE-$VERSION"
 tar cjf "$DIR/dist/$PACKAGE-$VERSION.tar.bz2" "$PACKAGE-$VERSION"
+cd "$PACKAGE-$VERSION"
+./setup.py bdist_rpm
+mv "dist/$PACKAGE-$VERSION-1."{noarch,src}.rpm "$DIR/dist"
 rm -fr "$TEMPDIR"
