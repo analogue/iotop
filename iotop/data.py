@@ -42,14 +42,13 @@ else:
     has_ctypes = True
 
 if not ioaccounting or not has_ctypes:
-    def boolean2string(boolean):
-        return boolean and 'Found' or 'Not found'
     print 'Could not run iotop as some of the requirements are not met:'
-    print '- Linux >= 2.6.20 with I/O accounting support ' \
-             '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
-             'CONFIG_TASK_IO_ACCOUNTING):', boolean2string(ioaccounting)
-    print '- Python >= 2.5 or Python 2.4 with the ctypes module:', \
-        boolean2string(has_ctypes)
+    if not ioaccounting:
+        print '- Linux >= 2.6.20 with I/O accounting support ' \
+              '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
+              'CONFIG_TASK_IO_ACCOUNTING)'
+    if not has_ctypes:
+        print '- Python >= 2.5 or Python 2.4 with the ctypes module'
 
     sys.exit(1)
 
