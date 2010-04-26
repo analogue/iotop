@@ -131,7 +131,7 @@ class NulStrAttr(Attr):
 
 class U32Attr(Attr):
     def __init__(self, attr_type, val):
-        Attr.__init__(self, attr_type, "L", val)
+        Attr.__init__(self, attr_type, "I", val)
 
 class U8Attr(Attr):
     def __init__(self, attr_type, val):
