@@ -3,7 +3,7 @@ Netlink message generation/parsing
 
 Copyright 2007        Johannes Berg <johannes@sipsolutions.net>
 
-GPLv2
+GPLv2+; See copying for details.
 '''
 
 import struct, socket
