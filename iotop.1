@@ -8,9 +8,9 @@ iotop \- simple top\-like I/O monitor
 .SH DESCRIPTION
 iotop watches I/O usage information output by the Linux kernel (requires
 2.6.20 or later) and displays a table of current I/O usage by processes
-or threads on the system. At least the CONFIG_TASK_DELAY_ACCT and
-CONFIG_TASK_IO_ACCOUNTING options need to be enabled in your Linux kernel
-build configuration, these options depend on CONFIG_TASKSTATS.
+or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
+CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
+options need to be enabled in your Linux kernel build configuration.
 .PP
 iotop displays columns for the I/O bandwidth read and written by each
 process/thread during the sampling period. It also displays the percentage

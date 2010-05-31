@@ -29,7 +29,7 @@ import time
 
 #
 # Check for requirements:
-#   o Linux >= 2.6.20 with I/O accounting
+#   o Linux >= 2.6.20 with I/O accounting and VM event counters
 #   o Python >= 2.5 or Python 2.4 + ctypes
 #
 
@@ -40,13 +40,24 @@ except ImportError:
     has_ctypes = False
 else:
     has_ctypes = True
+try:
+    from iotop.vmstat import VmStat
+    vmstat_f = VmStat()
+except:
+    vm_event_counters = False
+else:
+    vm_event_counters = True
 
-if not ioaccounting or not has_ctypes:
+if not ioaccounting or not has_ctypes or not vm_event_counters:
     print 'Could not run iotop as some of the requirements are not met:'
-    if not ioaccounting:
-        print '- Linux >= 2.6.20 with I/O accounting support ' \
+    if not ioaccounting or not vm_event_counters:
+        print '- Linux >= 2.6.20 with'
+	if not ioaccounting:
+            print '  - I/O accounting support ' \
               '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
               'CONFIG_TASK_IO_ACCOUNTING)'
+        if not vm_event_counters:
+            print '  - VM event counters (CONFIG_VM_EVENT_COUNTERS)'
     if not has_ctypes:
         print '- Python >= 2.5 or Python 2.4 with the ctypes module'
 
