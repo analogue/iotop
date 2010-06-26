@@ -34,12 +34,14 @@ import time
 #
 
 ioaccounting = os.path.exists('/proc/self/io')
+
 try:
     import ctypes
 except ImportError:
     has_ctypes = False
 else:
     has_ctypes = True
+
 try:
     from iotop.vmstat import VmStat
     vmstat_f = VmStat()
@@ -52,7 +54,7 @@ if not ioaccounting or not has_ctypes or not vm_event_counters:
     print 'Could not run iotop as some of the requirements are not met:'
     if not ioaccounting or not vm_event_counters:
         print '- Linux >= 2.6.20 with'
-	if not ioaccounting:
+        if not ioaccounting:
             print '  - I/O accounting support ' \
               '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
               'CONFIG_TASK_IO_ACCOUNTING)'
