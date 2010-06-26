@@ -7,4 +7,3 @@ include THANKS
 include install-rpm.sh
 include iotop.1
 include iotop.py
-include setuptools-0.6c9-py2.4.egg
