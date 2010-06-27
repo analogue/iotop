@@ -1,3 +1,8 @@
+0.4.1
+~~~~~
+o Portability fix
+o Better reporting of missing requirements
+
 0.4
 ~~~
 o Compatibility with python2.4 using the ctypes module
