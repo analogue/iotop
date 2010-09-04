@@ -30,3 +30,6 @@ Gabriel Redner <gredner@gmail.com>
 
 Jiri Olsa <jolsa@redhat.com>
     Wrote the support for python2.4 with the ctypes module.
+
+Philipp Thomas <pth@suse.de>
+    Reported that iotop produced wrong numbers in openSUSE 11.3.

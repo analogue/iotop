@@ -134,6 +134,8 @@ class Stats(DumpableObject):
 
 TASKSTATS_CMD_GET = 1
 TASKSTATS_CMD_ATTR_PID = 1
+TASKSTATS_TYPE_AGGR_PID = 4
+TASKSTATS_TYPE_PID = 1
 
 class TaskStatsNetlink(object):
     # Keep in sync with format_stats() and pinfo.did_some_io()
@@ -164,11 +166,17 @@ class TaskStatsNetlink(object):
         reply_data = reply.payload[20:]
 
         reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
-        reply_version = struct.unpack('H', reply.payload[20:22])[0]
         assert reply_length >= 288
-        assert reply_type == TASKSTATS_CMD_ATTR_PID + 3
-        assert reply_version >= 4
-        return Stats(reply_data)
+        assert reply_type == TASKSTATS_TYPE_AGGR_PID
+
+        pid_length, pid_type = struct.unpack('HH', reply.payload[8:12])
+        assert pid_type == TASKSTATS_TYPE_PID
+
+        taskstats_start = 4 + 4 + pid_length + 4
+        taskstats_data = reply.payload[taskstats_start:]
+        taskstats_version = struct.unpack('H', taskstats_data[:2])[0]
+        assert taskstats_version >= 4
+        return Stats(taskstats_data)
 
 #
 # PIDs manipulations
