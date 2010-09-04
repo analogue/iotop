@@ -29,8 +29,10 @@ import time
 # the architecture name and the word size.
 IOPRIO_GET_ARCH_SYSCALL = [
     ('alpha',       '*',  443),
+    ('arm*',        '*',  315),
     ('i*86',        '*',  290),
     ('ia64*',       '*', 1275),
+    ('parisc*',     '*',  268),
     ('powerpc*',    '*',  274),
     ('s390*',       '*',  283),
     ('sparc*',      '*',  218),
@@ -41,8 +43,10 @@ IOPRIO_GET_ARCH_SYSCALL = [
 
 IOPRIO_SET_ARCH_SYSCALL = [
     ('alpha',       '*',  442),
+    ('arm*',        '*',  314),
     ('i*86',        '*',  289),
     ('ia64*',       '*', 1274),
+    ('parisc*',     '*',  267),
     ('powerpc*',    '*',  273),
     ('s390*',       '*',  282),
     ('sparc*',      '*',  196),

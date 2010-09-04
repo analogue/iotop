@@ -33,3 +33,6 @@ Jiri Olsa <jolsa@redhat.com>
 
 Philipp Thomas <pth@suse.de>
     Reported that iotop produced wrong numbers in openSUSE 11.3.
+
+Jakub Wilk <jwilk@debian.org>
+    Contributed syscall numbers for getting and setting IO priority on armel and hppa architectures.
