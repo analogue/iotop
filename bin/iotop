@@ -6,17 +6,6 @@
 import sys
 
 try:
-    from distutils.dist import Distribution
-    from distutils.command.install import install
-    install_cmd = install(Distribution())
-    install_cmd.initialize_options()
-    install_cmd.finalize_options()
-    iotop_install_path = install_cmd.install_lib
-    sys.path.insert(0, iotop_install_path)
-except Exception:
-    pass
-
-try:
     from iotop.ui import main
 except ImportError, e:
     print e
