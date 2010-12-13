@@ -448,11 +448,7 @@ class IOTopUI(object):
                 try:
                     self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
                 except curses.error:
-                    exc_type, value, traceback = sys.exc_info()
-                    value = '%s win:%s i:%d line:%s' % \
-                                       (value, self.win.getmaxyx(), i, lines[i])
-                    value = str(value).encode('string_escape')
-                    raise exc_type, value, traceback
+                    pass
             if status_msg:
                 self.win.insstr(self.height - 1, 0, status_msg, curses.A_BOLD)
             self.win.refresh()
