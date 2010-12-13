@@ -446,7 +446,7 @@ class IOTopUI(object):
             num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
             for i in xrange(num_lines):
                 try:
-                    self.win.insstr(i + 2, 0, lines[i].encode('utf-8'))
+                    self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
                 except curses.error:
                     exc_type, value, traceback = sys.exc_info()
                     value = '%s win:%s i:%d line:%s' % \
