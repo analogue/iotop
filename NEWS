@@ -1,3 +1,10 @@
+0.4.2
+~~~~~
+o Workaround for ncurses bug where UTF-8 strings are misprinted
+o Added ioprio support for the armel and hppa architectures
+o Fix possible incompatibility with linux-2.6.37 on 64 bit systems
+o Do not crash when the locale is incorrectly configured
+
 0.4.1
 ~~~~~
 o Portability fix
