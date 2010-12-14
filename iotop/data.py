@@ -163,8 +163,6 @@ class TaskStatsNetlink(object):
         if len(reply.payload) < 292:
             # Short reply
             return
-        reply_data = reply.payload[20:]
-
         reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
         assert reply_length >= 288
         assert reply_type == TASKSTATS_TYPE_AGGR_PID
