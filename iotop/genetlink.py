@@ -45,6 +45,18 @@ class GeNlMessage(Message):
         Message.__init__(self, family, flags=flags,
                          payload=[GenlHdr(self.cmd)]+attrs)
 
+    @staticmethod
+    def recv(conn):
+        msg = conn.recv()
+        packet = msg.payload
+        hdr = _genl_hdr_parse(packet[:4])
+
+        genlmsg = GeNlMessage(msg.type, hdr.cmd, [], msg.flags)
+        genlmsg.attrs = parse_attributes(packet[4:])
+        genlmsg.version = hdr.version
+
+        return genlmsg
+
 class Controller:
     def __init__(self, conn):
         self.conn = conn
@@ -53,10 +65,8 @@ class Controller:
         m = GeNlMessage(GENL_ID_CTRL, CTRL_CMD_GETFAMILY,
                         flags=NLM_F_REQUEST, attrs=[a])
         m.send(self.conn)
-        m = self.conn.recv()
-        gh = _genl_hdr_parse(m.payload[:4])
-        attrs = parse_attributes(m.payload[4:])
-        return attrs[CTRL_ATTR_FAMILY_ID].u16()
+        m = GeNlMessage.recv(self.conn)
+        return m.attrs[CTRL_ATTR_FAMILY_ID].u16()
 
 connection = Connection(NETLINK_GENERIC)
 controller = Controller(connection)

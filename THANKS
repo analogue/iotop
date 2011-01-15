@@ -36,3 +36,9 @@ Philipp Thomas <pth@suse.de>
 
 Jakub Wilk <jwilk@debian.org>
     Contributed syscall numbers for getting and setting IO priority on armel and hppa architectures.
+
+Jeff Mahoney <jeffm@suse.com>
+    Contributed a fixed implementation of the taskstats parsing code.
+
+Florian Mickler <florian@mickler.org>
+    Contributed a fixed implementation of the taskstats parsing code.

@@ -136,6 +136,7 @@ TASKSTATS_CMD_GET = 1
 TASKSTATS_CMD_ATTR_PID = 1
 TASKSTATS_TYPE_AGGR_PID = 4
 TASKSTATS_TYPE_PID = 1
+TASKSTATS_TYPE_STATS = 3
 
 class TaskStatsNetlink(object):
     # Keep in sync with format_stats() and pinfo.did_some_io()
@@ -154,24 +155,22 @@ class TaskStatsNetlink(object):
     def get_single_task_stats(self, thread):
         thread.task_stats_request.send(self.connection)
         try:
-            reply = self.connection.recv()
+            reply = GeNlMessage.recv(self.connection)
         except OSError, e:
             if e.errno == errno.ESRCH:
                 # OSError: Netlink error: No such process (3)
                 return
             raise
-        if len(reply.payload) < 292:
+        for attr_type, attr_value in reply.attrs.iteritems():
+            if attr_type == TASKSTATS_TYPE_AGGR_PID:
+                reply = attr_value.nested()
+                break
+        else:
+            return
+        taskstats_data = reply[TASKSTATS_TYPE_STATS].data
+        if len(taskstats_data) < 272:
             # Short reply
             return
-        reply_length, reply_type = struct.unpack('HH', reply.payload[4:8])
-        assert reply_length >= 288
-        assert reply_type == TASKSTATS_TYPE_AGGR_PID
-
-        pid_length, pid_type = struct.unpack('HH', reply.payload[8:12])
-        assert pid_type == TASKSTATS_TYPE_PID
-
-        taskstats_start = 4 + 4 + pid_length + 4
-        taskstats_data = reply.payload[taskstats_start:]
         taskstats_version = struct.unpack('H', taskstats_data[:2])[0]
         assert taskstats_version >= 4
         return Stats(taskstats_data)
