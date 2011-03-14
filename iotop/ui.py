@@ -280,7 +280,6 @@ class IOTopUI(object):
     def handle_key(self, key):
         def toggle_accumulated():
             self.options.accumulated ^= True
-            self.process_list.clear()
         def toggle_only_io():
             self.options.only ^= True
         def toggle_processes():
