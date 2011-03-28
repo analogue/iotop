@@ -1,3 +1,9 @@
+0.4.3
+~~~~~
+o Fixed netlink message parsing to accept alignement padding
+o Force UTF-8 output even if the locale is misconfigured
+o Changed the semantic of 'a' to show stats since iotop was started
+
 0.4.2
 ~~~~~
 o Workaround for an ncurses bug where UTF-8 strings are misprinted
