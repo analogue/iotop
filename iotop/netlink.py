@@ -6,7 +6,9 @@ Copyright 2007        Johannes Berg <johannes@sipsolutions.net>
 GPLv2+; See copying for details.
 '''
 
-import struct, socket
+import os
+import socket
+import struct
 
 try:
     # try to use python 2.5's netlink support
@@ -36,7 +38,6 @@ except socket.error:
     except ImportError:
         # or fall back to the ctypes module
         import ctypes
-        import os
 
         libc = ctypes.CDLL(None)
 
@@ -220,7 +221,6 @@ class Connection:
         msg = Message(msg_type, flags, seq, contents[16:])
         msg.pid = pid
         if msg.type == NLMSG_ERROR:
-            import os
             errno = -struct.unpack("i", msg.payload[:4])[0]
             if errno != 0:
                 err = OSError("Netlink error: %s (%d)" % (

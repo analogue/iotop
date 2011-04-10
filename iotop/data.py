@@ -17,11 +17,9 @@
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
 import errno
-import glob
 import os
 import pprint
 import pwd
-import socket
 import stat
 import struct
 import sys

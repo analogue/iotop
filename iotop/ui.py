@@ -22,9 +22,7 @@ import locale
 import math
 import optparse
 import os
-import pwd
 import select
-import struct
 import sys
 import time
 

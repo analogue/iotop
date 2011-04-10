@@ -16,8 +16,6 @@
 #
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
-import os
-
 class VmStat(object):
     def __init__(self):
         self.vmstat_file = open('/proc/vmstat')

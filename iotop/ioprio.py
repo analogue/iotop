@@ -20,7 +20,6 @@ import ctypes
 import fnmatch
 import os
 import platform
-import time
 
 # From http://git.kernel.org/?p=utils/util-linux-ng/util-linux-ng.git;a=blob;
 #      f=configure.ac;h=770eb45ae85d32757fc3cff1d70a7808a627f9f7;hb=HEAD#l354
