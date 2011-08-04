@@ -411,6 +411,7 @@ class IOTopUI(object):
             titles = ['    TIME'] + titles
             current_time = time.strftime('%H:%M:%S ')
             lines = [current_time + l for l in lines]
+            summary = current_time + summary
         if self.options.batch:
             if self.options.quiet <= 2:
                 print summary
