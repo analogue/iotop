@@ -398,8 +398,8 @@ class IOTopUI(object):
 
     def refresh_display(self, first_time, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
-                          format_bandwidth(self.options, total_read, duration),
-                          format_bandwidth(self.options, total_write, duration))
+                format_bandwidth(self.options, total_read, duration).rjust(14),
+                format_bandwidth(self.options, total_write, duration).rjust(14))
         if self.options.processes:
             pid = '  PID'
         else:
