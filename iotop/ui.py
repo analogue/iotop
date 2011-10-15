@@ -458,10 +458,19 @@ def run_iotop_window(win, options):
     ui.run()
 
 def run_iotop(options):
-    if options.batch:
-        return run_iotop_window(None, options)
-    else:
-        return curses.wrapper(run_iotop_window, options)
+    try:
+        if options.batch:
+            return run_iotop_window(None, options)
+        else:
+            return curses.wrapper(run_iotop_window, options)
+    except OSError, e:
+        if e.errno == errno.EPERM:
+            print >> sys.stderr, e
+            print >> sys.stderr, ('iotop requires root or the NET_ADMIN '
+                                  'capability.')
+            sys.exit(1)
+        else:
+            raise
 
 #
 # Profiling
