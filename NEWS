@@ -1,3 +1,8 @@
+0.4.4
+~~~~~
+o Cosmetic fixes, including a better error message when missing root
+credentials
+
 0.4.3
 ~~~~~
 o Fixed netlink message parsing to accept alignement padding
