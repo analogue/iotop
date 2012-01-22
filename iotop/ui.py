@@ -79,6 +79,16 @@ def format_stats(options, process, duration):
     write_bytes = display_format(written_bytes, duration)
     return io_delay, swapin_delay, read_bytes, write_bytes
 
+def get_max_pid_width():
+    try:
+        return len(file('/proc/sys/kernel/pid_max').read().strip())
+    except Exception, e:
+        print e
+        # Reasonable default in case something fails
+        return 5
+
+MAX_PID_WIDTH = get_max_pid_width()
+
 #
 # UI Exceptions
 #
@@ -365,7 +375,8 @@ class IOTopUI(object):
                 delay_stats = '%7s %7s ' % (swapin_delay, io_delay)
             else:
                 delay_stats = ' ?unavailable?  '
-            line = '%5d %4s %-8s %11s %11s %s' % (
+            pid_format = '%%%dd' % MAX_PID_WIDTH
+            line = (pid_format + ' %4s %-8s %11s %11s %s') % (
                 p.pid, p.get_ioprio(), p.get_user()[:8], read_bytes,
                 write_bytes, delay_stats)
             cmdline = p.get_cmdline()
@@ -400,10 +411,12 @@ class IOTopUI(object):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
                 format_bandwidth(self.options, total_read, duration).rjust(14),
                 format_bandwidth(self.options, total_write, duration).rjust(14))
+
+        pid = max(0, (MAX_PID_WIDTH - 3)) * ' '
         if self.options.processes:
-            pid = '  PID'
+            pid += 'PID'
         else:
-            pid = '  TID'
+            pid += 'TID'
         titles = [pid, '  PRIO', '  USER', '     DISK READ', '  DISK WRITE',
                   '  SWAPIN', '      IO', '    COMMAND']
         lines = self.get_data()
