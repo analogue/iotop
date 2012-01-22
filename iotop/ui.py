@@ -23,6 +23,7 @@ import math
 import optparse
 import os
 import select
+import signal
 import sys
 import time
 
@@ -465,6 +466,8 @@ class IOTopUI(object):
             self.win.refresh()
 
 def run_iotop_window(win, options):
+    if options.batch:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     taskstats_connection = TaskStatsNetlink(options)
     process_list = ProcessList(taskstats_connection, options)
     ui = IOTopUI(win, process_list, options)
