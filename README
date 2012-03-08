@@ -1,7 +1,8 @@
 Iotop is a Python program with a top like UI used to show of behalf of which
 process is the I/O going on. It requires Python >= 2.5 (or Python >= 2.4 with
-the ctypes module) and a Linux kernel >= 2.6.20 with the TASK_DELAY_ACCT
-CONFIG_TASKSTATS, TASK_IO_ACCOUNTING and CONFIG_VM_EVENT_COUNTERS options on.
+the ctypes module) and a Linux kernel >= 2.6.20 with the CONFIG_TASK_DELAY_ACCT
+CONFIG_TASKSTATS, CONFIG_TASK_IO_ACCOUNTING and CONFIG_VM_EVENT_COUNTERS options
+on.
 
 
 To run a local version of iotop:
