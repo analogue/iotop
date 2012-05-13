@@ -482,8 +482,14 @@ def run_iotop(options):
     except OSError, e:
         if e.errno == errno.EPERM:
             print >> sys.stderr, e
-            print >> sys.stderr, ('iotop requires root or the NET_ADMIN '
-                                  'capability.')
+            print >> sys.stderr, ('''
+The Linux kernel interfaces that iotop relies on now require root priviliges
+or the NET_ADMIN capability. This change occured because a security issue
+(CVE-2011-2494) was found that allows leakage of sensitive data across user
+boundaries. If you require the ability to run iotop as a non-root user, please
+configure sudo to allow you to run iotop as root.
+
+Please do not file bugs on iotop about this.''')
             sys.exit(1)
         else:
             raise
