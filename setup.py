@@ -12,8 +12,8 @@ process is the I/O going on.''',
       author='Guillaume Chazarain',
       author_email='guichaz@gmail.com',
       url='http://guichaz.free.fr/iotop',
-      scripts=['bin/iotop'],
-      data_files=[('share/man/man1', ['iotop.1'])],
+      scripts=['sbin/iotop'],
+      data_files=[('share/man/man8', ['iotop.8'])],
       packages=['iotop'],
       license='GPL'
 )
