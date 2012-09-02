@@ -49,23 +49,23 @@ else:
     vm_event_counters = True
 
 if not ioaccounting or not has_ctypes or not vm_event_counters:
-    print 'Could not run iotop as some of the requirements are not met:'
+    print('Could not run iotop as some of the requirements are not met:')
     if not ioaccounting or not vm_event_counters:
-        print '- Linux >= 2.6.20 with'
+        print('- Linux >= 2.6.20 with')
         if not ioaccounting:
-            print '  - I/O accounting support ' \
+            print('  - I/O accounting support ' \
               '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
-              'CONFIG_TASK_IO_ACCOUNTING)'
+              'CONFIG_TASK_IO_ACCOUNTING)')
         if not vm_event_counters:
-            print '  - VM event counters (CONFIG_VM_EVENT_COUNTERS)'
+            print('  - VM event counters (CONFIG_VM_EVENT_COUNTERS)')
     if not has_ctypes:
-        print '- Python >= 2.5 or Python 2.4 with the ctypes module'
+        print('- Python >= 2.5 or Python 2.4 with the ctypes module')
 
     sys.exit(1)
 
 from iotop import ioprio, vmstat
-from netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
-from genetlink import Controller, GeNlMessage
+from iotop.netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
+from iotop.genetlink import Controller, GeNlMessage
 
 class DumpableObject(object):
     """Base class for all objects that allows easy introspection when printed"""
@@ -154,12 +154,12 @@ class TaskStatsNetlink(object):
         thread.task_stats_request.send(self.connection)
         try:
             reply = GeNlMessage.recv(self.connection)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 # OSError: Netlink error: No such process (3)
                 return
             raise
-        for attr_type, attr_value in reply.attrs.iteritems():
+        for attr_type, attr_value in reply.attrs.items():
             if attr_type == TASKSTATS_TYPE_AGGR_PID:
                 reply = attr_value.nested()
                 break
@@ -214,6 +214,8 @@ def safe_utf8_decode(s):
         return s.decode('utf-8')
     except UnicodeDecodeError:
         return s.encode('string_escape')
+    except AttributeError:
+        return s
 
 class ThreadInfo(DumpableObject):
     """Stats for a single thread"""
@@ -285,7 +287,7 @@ class ProcessInfo(DumpableObject):
         if uid is not None and not self.user:
             try:
                 self.user = safe_utf8_decode(pwd.getpwuid(uid).pw_name)
-            except KeyError:
+            except (KeyError, AttributeError):
                 self.user = str(uid)
         return self.user or '{none}'
 
@@ -329,7 +331,7 @@ class ProcessInfo(DumpableObject):
         return False
 
     def get_ioprio(self):
-        priorities = set(t.get_ioprio() for t in self.threads.itervalues())
+        priorities = set(t.get_ioprio() for t in self.threads.values())
         if len(priorities) == 1:
             return priorities.pop()
         return '?dif'
@@ -351,10 +353,9 @@ class ProcessInfo(DumpableObject):
     def update_stats(self):
         stats_delta = Stats.build_all_zero()
         for tid, thread in self.threads.items():
-            if thread.mark:
-                del self.threads[tid]
-            else:
+            if not thread.mark:
                 stats_delta.accumulate(thread.stats_delta, stats_delta)
+        self.threads = dict([(tid, thread) for tid, thread in self.threads.items() if not thread.mark])
 
         nr_threads = len(self.threads)
         if not nr_threads:
@@ -442,15 +443,13 @@ class ProcessList(DumpableObject):
         return self.vmstat.delta()
 
     def refresh_processes(self):
-        for process in self.processes.itervalues():
-            for thread in process.threads.itervalues():
+        for process in self.processes.values():
+            for thread in process.threads.values():
                 thread.mark = True
 
         total_read_and_write = self.update_process_counts()
 
-        for pid, process in self.processes.items():
-            if not process.update_stats():
-                del self.processes[pid]
+        self.processes = dict([(pid,process) for pid, process in self.processes.items() if process.update_stats()])
 
         return total_read_and_write
 

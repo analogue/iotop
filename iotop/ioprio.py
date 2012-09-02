@@ -175,6 +175,6 @@ if __name__ == '__main__':
         pid = int(sys.argv[1])
     else:
         pid = os.getpid()
-    print 'pid:', pid
-    print 'ioprio:', get(pid)
+    print('pid:', pid)
+    print('ioprio:', get(pid))
 

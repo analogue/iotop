@@ -16,6 +16,9 @@
 #
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
+# Allow printing with same syntax in Python 2/3
+from __future__ import print_function 
+
 import curses
 import errno
 import locale
@@ -30,8 +33,8 @@ import time
 from iotop.data import find_uids, TaskStatsNetlink, ProcessList, Stats
 from iotop.data import ThreadInfo
 from iotop.version import VERSION
-import ioprio
-from ioprio import IoprioSetError
+import iotop.ioprio
+from iotop.ioprio import IoprioSetError
 
 #
 # Utility functions for the UI
@@ -82,9 +85,9 @@ def format_stats(options, process, duration):
 
 def get_max_pid_width():
     try:
-        return len(file('/proc/sys/kernel/pid_max').read().strip())
-    except Exception, e:
-        print e
+        return len(open('/proc/sys/kernel/pid_max').read().strip())
+    except Exception as e:
+        print(e)
         # Reasonable default in case something fails
         return 5
 
@@ -160,7 +163,7 @@ class IOTopUI(object):
 
             try:
                 events = poll.poll(self.options.delay_seconds * 1000.0)
-            except select.error, e:
+            except select.error as e:
                 if e.args and e.args[0] == errno.EINTR:
                     events = 0
                 else:
@@ -315,7 +318,7 @@ class IOTopUI(object):
                 exec_unit.set_ioprio(ioprio_class, ioprio_data)
                 self.process_list.clear()
                 self.process_list.refresh_processes()
-            except IoprioSetError, e:
+            except IoprioSetError as e:
                 self.prompt_error('Error setting I/O priority: %s' % e.err)
             except InvalidPid:
                 self.prompt_error('Invalid process id!')
@@ -396,7 +399,7 @@ class IOTopUI(object):
             return not self.options.only or \
                    p.did_some_io(self.options.accumulated)
 
-        processes = filter(should_format, self.process_list.processes.values())
+        processes = list(filter(should_format, self.process_list.processes.values()))
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         if self.options.accumulated:
             stats_lambda = lambda p: p.stats_accum
@@ -406,7 +409,7 @@ class IOTopUI(object):
                        reverse=self.sorting_reverse)
         if not self.options.batch:
             del processes[self.height - 2:]
-        return map(format, processes)
+        return list(map(format, processes))
 
     def refresh_display(self, first_time, total_read, total_write, duration):
         summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
@@ -428,18 +431,18 @@ class IOTopUI(object):
             summary = current_time + summary
         if self.options.batch:
             if self.options.quiet <= 2:
-                print summary
+                print(summary)
                 if self.options.quiet <= int(first_time):
-                    print ''.join(titles)
+                    print(''.join(titles))
             for l in lines:
-                print l.encode('utf-8')
+                print(l.encode('utf-8'))
             sys.stdout.flush()
         else:
             self.win.erase()
             self.win.addstr(summary[:self.width])
             self.win.hline(1, 0, ord(' ') | curses.A_REVERSE, self.width)
             remaining_cols = self.width
-            for i in xrange(len(titles)):
+            for i in range(len(titles)):
                 attr = curses.A_REVERSE
                 title = titles[i]
                 if i == self.sorting_key:
@@ -456,9 +459,9 @@ class IOTopUI(object):
                 status_msg = ('CONFIG_TASK_DELAY_ACCT not enabled in kernel, '
                               'cannot determine SWAPIN and IO %')
             num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
-            for i in xrange(num_lines):
+            for i in range(num_lines):
                 try:
-                    self.win.addstr(i + 2, 0, lines[i].encode('utf-8'))
+                    self.win.addstr(i + 2, 0, lines[i])
                 except curses.error:
                     pass
             if status_msg:
@@ -479,17 +482,17 @@ def run_iotop(options):
             return run_iotop_window(None, options)
         else:
             return curses.wrapper(run_iotop_window, options)
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EPERM:
-            print >> sys.stderr, e
-            print >> sys.stderr, ('''
+            print(e, file=sys.stderr)
+            print('''
 The Linux kernel interfaces that iotop relies on now require root priviliges
 or the NET_ADMIN capability. This change occured because a security issue
 (CVE-2011-2494) was found that allows leakage of sensitive data across user
 boundaries. If you require the ability to run iotop as a non-root user, please
 configure sudo to allow you to run iotop as root.
 
-Please do not file bugs on iotop about this.''')
+Please do not file bugs on iotop about this.''', file=sys.stderr)
             sys.exit(1)
         else:
             raise
@@ -503,14 +506,14 @@ def _profile(continuation):
     try:
         import cProfile
         import pstats
-        print 'Profiling using cProfile'
+        print('Profiling using cProfile')
         cProfile.runctx('continuation()', globals(), locals(), prof_file)
         stats = pstats.Stats(prof_file)
     except ImportError:
         import hotshot
         import hotshot.stats
         prof = hotshot.Profile(prof_file, lineevents=1)
-        print 'Profiling using hotshot'
+        print('Profiling using hotshot')
         prof.runcall(continuation)
         prof.close()
         stats = hotshot.stats.load(prof_file)
@@ -540,7 +543,7 @@ def main():
     try:
         locale.setlocale(locale.LC_ALL, '')
     except locale.Error:
-        print 'unable to set locale, falling back to the default locale'
+        print('unable to set locale, falling back to the default locale')
     parser = optparse.OptionParser(usage=USAGE, version='iotop ' + VERSION)
     parser.add_option('-o', '--only', action='store_true',
                       dest='only', default=False,
