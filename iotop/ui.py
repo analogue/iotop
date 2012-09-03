@@ -33,7 +33,7 @@ import time
 from iotop.data import find_uids, TaskStatsNetlink, ProcessList, Stats
 from iotop.data import ThreadInfo
 from iotop.version import VERSION
-import iotop.ioprio
+from iotop import ioprio
 from iotop.ioprio import IoprioSetError
 
 #
@@ -537,8 +537,8 @@ which the thread is running (set using the ionice command).
 
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, p to toggle the --processes
-option, a to toggle the --accumulated option, q to quit, any other key to force
-a refresh.''' % sys.argv[0]
+option, a to toggle the --accumulated option, i to change I/O priority, q to
+quit, any other key to force a refresh.''' % sys.argv[0]
 
 def main():
     try:
