@@ -436,7 +436,7 @@ class IOTopUI(object):
                 if self.options.quiet <= int(first_time):
                     print(''.join(titles))
             for l in lines:
-                print(l.encode('utf-8'))
+                print(l)
             sys.stdout.flush()
         else:
             self.win.erase()
