@@ -17,7 +17,7 @@
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
 # Allow printing with same syntax in Python 2/3
-from __future__ import print_function 
+from __future__ import print_function
 
 import curses
 import errno
@@ -399,7 +399,8 @@ class IOTopUI(object):
             return not self.options.only or \
                    p.did_some_io(self.options.accumulated)
 
-        processes = list(filter(should_format, self.process_list.processes.values()))
+        processes = list(filter(should_format,
+                                self.process_list.processes.values()))
         key = IOTopUI.sorting_keys[self.sorting_key][0]
         if self.options.accumulated:
             stats_lambda = lambda p: p.stats_accum

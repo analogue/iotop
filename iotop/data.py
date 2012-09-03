@@ -355,7 +355,8 @@ class ProcessInfo(DumpableObject):
         for tid, thread in self.threads.items():
             if not thread.mark:
                 stats_delta.accumulate(thread.stats_delta, stats_delta)
-        self.threads = dict([(tid, thread) for tid, thread in self.threads.items() if not thread.mark])
+        self.threads = dict([(tid, thread) for tid, thread in
+                             self.threads.items() if not thread.mark])
 
         nr_threads = len(self.threads)
         if not nr_threads:
@@ -449,7 +450,9 @@ class ProcessList(DumpableObject):
 
         total_read_and_write = self.update_process_counts()
 
-        self.processes = dict([(pid,process) for pid, process in self.processes.items() if process.update_stats()])
+        self.processes = dict([(pid, process) for pid, process in
+                               self.processes.items() if
+                               process.update_stats()])
 
         return total_read_and_write
 
