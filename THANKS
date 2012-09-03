@@ -42,3 +42,6 @@ Jeff Mahoney <jeffm@suse.com>
 
 Florian Mickler <florian@mickler.org>
     Contributed a fixed implementation of the taskstats parsing code.
+
+Ka-Hing Cheung <kcheung@riverbed.com>
+    Contributed code to show custom thread names.

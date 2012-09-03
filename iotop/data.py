@@ -197,6 +197,18 @@ def find_uids(options):
     if error:
         sys.exit(1)
 
+
+def parse_proc_pid_status(pid):
+    result_dict = {}
+    try:
+        for line in open('/proc/%d/status' % pid):
+            key, value = line.split(':\t', 1)
+            result_dict[key] = value.strip()
+    except IOError:
+        pass  # No such process
+    return result_dict
+
+
 def safe_utf8_decode(s):
     try:
         return s.decode('utf-8')
@@ -277,22 +289,6 @@ class ProcessInfo(DumpableObject):
                 self.user = str(uid)
         return self.user or '{none}'
 
-    def get_proc_status_name(self):
-        try:
-            first_line = open('/proc/%d/status' % self.pid).readline()
-        except IOError:
-            return '{no such process}'
-        prefix = 'Name:\t'
-        if first_line.startswith(prefix):
-            name = first_line[6:].strip()
-        else:
-            name = ''
-        if name:
-            name = '[%s]' % name
-        else:
-            name = '{no name}'
-        return name
-
     def get_cmdline(self):
         # A process may exec, so we must always reread its cmdline
         try:
@@ -300,15 +296,29 @@ class ProcessInfo(DumpableObject):
             cmdline = proc_cmdline.read(4096)
         except IOError:
             return '{no such process}'
+        proc_status = parse_proc_pid_status(self.pid)
         if not cmdline:
             # Probably a kernel thread, get its name from /proc/PID/status
-            return self.get_proc_status_name()
+            proc_status_name = proc_status.get('Name', '')
+            if proc_status_name:
+                proc_status_name = '[%s]' % proc_status_name
+            else:
+                proc_status_name = '{no name}'
+            return proc_status_name
+        suffix = ''
+        tgid = int(proc_status.get('Tgid', self.pid))
+        if tgid != self.pid:
+            # Not the main thread, maybe it has a custom name
+            tgid_name = parse_proc_pid_status(tgid).get('Name', '')
+            thread_name = proc_status.get('Name', '')
+            if thread_name != tgid_name:
+                suffix += ' [%s]' % thread_name
         parts = cmdline.split('\0')
         if parts[0].startswith('/'):
             first_command_char = parts[0].rfind('/') + 1
             parts[0] = parts[0][first_command_char:]
         cmdline = ' '.join(parts).strip()
-        return safe_utf8_decode(cmdline)
+        return safe_utf8_decode(cmdline + suffix)
 
     def did_some_io(self, accumulated):
         if accumulated:
