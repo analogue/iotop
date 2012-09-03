@@ -188,7 +188,7 @@ def find_uids(options):
             try:
                 passwd = pwd.getpwnam(u)
             except KeyError:
-                print >> sys.stderr, 'Unknown user:', u
+                print('Unknown user:', u, file=sys.stderr)
                 error = True
             else:
                 uid = passwd.pw_uid
@@ -325,7 +325,7 @@ class ProcessInfo(DumpableObject):
     def did_some_io(self, accumulated):
         if accumulated:
             return not self.stats_accum.is_all_zero()
-        for t in self.threads.itervalues():
+        for t in self.threads.values():
             if not t.stats_delta.is_all_zero():
                 return True
         return False
@@ -337,7 +337,7 @@ class ProcessInfo(DumpableObject):
         return '?dif'
 
     def set_ioprio(self, ioprio_class, ioprio_data):
-        for thread in self.threads.itervalues():
+        for thread in self.threads.values():
             thread.set_ioprio(ioprio_class, ioprio_data)
 
     def ioprio_sort_key(self):
@@ -416,7 +416,7 @@ class ProcessList(DumpableObject):
             return [tgid]
 
         try:
-            tids = map(int, os.listdir('/proc/%d/task' % tgid))
+            tids = list(map(int, os.listdir('/proc/%d/task' % tgid)))
         except OSError:
             return []
 
