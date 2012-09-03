@@ -16,6 +16,9 @@
 #
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
+# Allow printing with same syntax in Python 2/3
+from __future__ import print_function
+
 import errno
 import os
 import pprint
