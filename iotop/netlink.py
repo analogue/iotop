@@ -128,7 +128,6 @@ class StrAttr(Attr):
 
 class NulStrAttr(Attr):
     def __init__(self, attr_type, data):
-        print(data)
         Attr.__init__(self, attr_type, "%dsB" % len(data), data.encode('utf-8'), 0)
 
 class U32Attr(Attr):
