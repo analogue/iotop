@@ -353,7 +353,9 @@ class ProcessInfo(DumpableObject):
     def update_stats(self):
         stats_delta = Stats.build_all_zero()
         for tid, thread in self.threads.items():
-            if not thread.mark:
+            if thread.mark:
+                del self.threads[tid]
+            else:
                 stats_delta.accumulate(thread.stats_delta, stats_delta)
         self.threads = dict([(tid, thread) for tid, thread in
                              self.threads.items() if not thread.mark])
