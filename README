@@ -12,7 +12,7 @@ $ ./iotop.py
 
 The documentation is available in the man page:
 
-$ man ./iotop.1
+$ man ./iotop.8
 
 
 To install iotop, you should use a package provided by your distribution. If you
