@@ -150,9 +150,8 @@ class IOTopUI(object):
             poll.register(sys.stdin.fileno(), select.POLLIN|select.POLLPRI)
         while self.options.iterations is None or \
               iterations < self.options.iterations:
-            total = self.process_list.refresh_processes()
-            total_read, total_write = total
-            self.refresh_display(iterations == 0, total_read, total_write,
+            total, actual = self.process_list.refresh_processes()
+            self.refresh_display(iterations == 0, total, actual,
                                  self.process_list.duration)
             if self.options.iterations is not None:
                 iterations += 1
@@ -412,10 +411,15 @@ class IOTopUI(object):
             del processes[self.height - 2:]
         return list(map(format, processes))
 
-    def refresh_display(self, first_time, total_read, total_write, duration):
-        summary = 'Total DISK READ: %s | Total DISK WRITE: %s' % (
-                format_bandwidth(self.options, total_read, duration).rjust(14),
-                format_bandwidth(self.options, total_write, duration).rjust(14))
+    def refresh_display(self, first_time, total, actual, duration):
+        summary = [
+                'Total DISK READ : %s | Total DISK WRITE : %s' % (
+                format_bandwidth(self.options, total[0], duration).rjust(14),
+                format_bandwidth(self.options, total[1], duration).rjust(14)),
+                'Actual DISK READ: %s | Actual DISK WRITE: %s' % (
+                format_bandwidth(self.options, actual[0], duration).rjust(14),
+                format_bandwidth(self.options, actual[1], duration).rjust(14))
+        ]
 
         pid = max(0, (MAX_PID_WIDTH - 3)) * ' '
         if self.options.processes:
@@ -429,10 +433,11 @@ class IOTopUI(object):
             titles = ['    TIME'] + titles
             current_time = time.strftime('%H:%M:%S ')
             lines = [current_time + l for l in lines]
-            summary = current_time + summary
+            summary = [current_time + s for s in summary]
         if self.options.batch:
             if self.options.quiet <= 2:
-                print(summary)
+                for s in summary:
+                    print(s)
                 if self.options.quiet <= int(first_time):
                     print(''.join(titles))
             for l in lines:
@@ -440,8 +445,9 @@ class IOTopUI(object):
             sys.stdout.flush()
         else:
             self.win.erase()
-            self.win.addstr(summary[:self.width])
-            self.win.hline(1, 0, ord(' ') | curses.A_REVERSE, self.width)
+            for i, s in enumerate(summary):
+                self.win.addstr(i, 0, s[:self.width])
+            self.win.hline(len(summary), 0, ord(' ') | curses.A_REVERSE, self.width)
             remaining_cols = self.width
             for i in range(len(titles)):
                 attr = curses.A_REVERSE
@@ -462,11 +468,11 @@ class IOTopUI(object):
             num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
             for i in range(num_lines):
                 try:
-                    self.win.addstr(i + 2, 0, lines[i])
+                    self.win.addstr(i + len(summary) + 1, 0, lines[i])
                 except curses.error:
                     pass
             if status_msg:
-                self.win.insstr(self.height - 1, 0, status_msg, curses.A_BOLD)
+                self.win.insstr(self.height - len(summary), 0, status_msg, curses.A_BOLD)
             self.win.refresh()
 
 def run_iotop_window(win, options):

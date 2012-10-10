@@ -433,6 +433,8 @@ class ProcessList(DumpableObject):
         self.duration = new_timestamp - self.timestamp
         self.timestamp = new_timestamp
 
+        total_read = total_write = 0
+
         for tgid in self.list_tgids():
             process = self.get_process(tgid)
             if not process:
@@ -442,9 +444,11 @@ class ProcessList(DumpableObject):
                 stats = self.taskstats_connection.get_single_task_stats(thread)
                 if stats:
                     thread.update_stats(stats)
+                    delta = thread.stats_delta
+                    total_read += delta.read_bytes
+                    total_write += delta.write_bytes
                     thread.mark = False
-
-        return self.vmstat.delta()
+        return (total_read, total_write), self.vmstat.delta()
 
     def refresh_processes(self):
         for process in self.processes.values():
