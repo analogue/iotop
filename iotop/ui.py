@@ -27,6 +27,7 @@ import optparse
 import os
 import select
 import signal
+import string
 import sys
 import time
 import logging
@@ -153,7 +154,7 @@ class BaseRenderer(object):
         'command' : {
             'title' : 'COMMAND',
             'column': 8,
-            'width' : 11,
+            'width' : 200,
         },
 #        'time' : {
 #            'title' : 'TIME',
@@ -202,19 +203,21 @@ class CursesRenderer(BaseRenderer):
 
         self.columns['pid']['color'] = self.A_YELLOW
         self.columns['priority']['color'] = self.A_GREEN
-        self.columns['user']['color'] = self.A_RED
-        self.columns['disk_read']['color'] = self.A_CYAN
-        self.columns['disk_write']['color'] = self.A_MAGENTA
-        self.columns['swapin']['color'] = self.A_WHITE
-        self.columns['io']['color'] = self.A_YELLOW
+        self.columns['user']['color'] = self.A_MAGENTA
+        self.columns['disk_read']['color'] = self.A_CYAN # | curses.A_BOLD
+        self.columns['disk_write']['color'] = self.A_GREEN # | curses.A_BOLD
+        self.columns['swapin']['color'] = self.A_YELLOW
+        self.columns['io']['color'] = self.A_MAGENTA
         self.columns['command']['color'] = self.A_WHITE
 
         for column_key, column_dict in self.columns.items():
-            column_dict['justify'] = unicode.rjust
+            column_dict['justify'] = str.rjust
             column_dict['add_spacer'] = False
 
-        self.columns['user']['justify'] = unicode.ljust
+        self.columns['user']['justify'] = str.ljust
+        self.columns['command']['justify'] = str.ljust
         self.columns['priority']['add_spacer'] = True
+        self.columns['io']['add_spacer'] = True
 
     def resize(self):
         self.height, self.width = self.win.getmaxyx()
@@ -303,10 +306,15 @@ class CursesRenderer(BaseRenderer):
             self.columns['user']['value'] = process.get_user()
             self.columns['disk_read']['value'] = read_bytes
             self.columns['disk_write']['value'] = write_bytes
+            self.columns['swapin']['value'] = swapin_delay
+            self.columns['io']['value'] = io_delay
+            self.columns['command']['value'] = process.get_cmdline()
 
-            for key in ('pid', 'priority', 'user', 'disk_read', 'disk_write'):
+            for key in self.column_keys: # ('pid', 'priority', 'user', 'disk_read', 'disk_write', 'swapin', 'io', 'command'):
                 column = self.columns[key]
-                self._printw(column['justify']('%s' % column['value'], column['width']), column['color'])
+                value = str(column['value'])
+                value = value[:column['width']]
+                self._printw(column['justify']('%s' % value, column['width']), column['color'])
                 if column['add_spacer']:
                     self._printw(' ', column['color'])
 
@@ -451,8 +459,8 @@ class IOTopUI(object):
             try:
                 curses.use_default_colors()
                 curses.start_color()
-                log.debug('colors = %s' % curses.COLORS)
-                log.debug('color_pairs = %s' % curses.COLOR_PAIRS)
+                #log.debug('colors = %s' % curses.COLORS)
+                #log.debug('color_pairs = %s' % curses.COLOR_PAIRS)
                 curses.curs_set(0)
             except curses.error:
                 # This call can fail with misconfigured terminals, for example
@@ -795,8 +803,8 @@ class IOTopUI(object):
         #if not self.options.batch:
         #    del processes[self.renderer.height - 2:]
         #return list(map(format, processes))
-        for process in processes[:1]:
-            log.debug('XXX %s' % process)
+#        for process in processes[:1]:
+#            log.debug('XXX %s' % process)
         return processes
 
 def run_iotop_window(win, options):
