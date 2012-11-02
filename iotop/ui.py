@@ -88,7 +88,8 @@ def format_stats(options, process, duration):
     written_bytes = stats.write_bytes - stats.cancelled_write_bytes
     written_bytes = max(0, written_bytes)
     write_bytes = display_format(written_bytes, duration)
-    return io_delay, swapin_delay, read_bytes, write_bytes
+    total_bytes = display_format(written_bytes + stats.read_bytes, duration)
+    return io_delay, swapin_delay, read_bytes, write_bytes, total_bytes
 
 def get_max_pid_width():
     try:
@@ -131,29 +132,35 @@ class BaseRenderer(object):
             'column': 3,
             'width' : 7,
         },
+        'disk_total' : {
+            'title' : 'DISK TOTAL',
+            'column': 4,
+            'width' : 14,
+            },
+
         'disk_read' : {
             'title' : 'DISK READ',
-            'column': 4,
+            'column': 5,
             'width' : 14,
         },
         'disk_write': {
             'title' : 'DISK WRITE',
-            'column': 5,
+            'column': 6,
             'width' : 12,
         },
         'swapin' : {
             'title' : 'SWAPIN',
-            'column': 6,
+            'column': 7,
             'width' : 8,
         },
         'io' : {
             'title' : 'IO',
-            'column': 7,
+            'column': 8,
             'width' : 8,
         },
         'command' : {
             'title' : 'COMMAND',
-            'column': 8,
+            'column': 9,
             'width' : 200,
         },
 #        'time' : {
@@ -187,12 +194,13 @@ class CursesRenderer(BaseRenderer):
         self.columns['pid']['title'] = 'PID' if self.options.processes else 'TID'
 
     def _init_colors(self):
-        curses.init_pair(1, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
-        curses.init_pair(6, curses.COLOR_RED, curses.COLOR_BLACK)
+        COLOR_DONT_CHANGE = -1
+        curses.init_pair(1, curses.COLOR_YELLOW, COLOR_DONT_CHANGE)
+        curses.init_pair(2, curses.COLOR_GREEN, COLOR_DONT_CHANGE)
+        curses.init_pair(3, curses.COLOR_WHITE, COLOR_DONT_CHANGE)
+        curses.init_pair(4, curses.COLOR_CYAN, COLOR_DONT_CHANGE)
+        curses.init_pair(5, curses.COLOR_MAGENTA, COLOR_DONT_CHANGE)
+        curses.init_pair(6, curses.COLOR_RED, COLOR_DONT_CHANGE)
 
         self.A_YELLOW = curses.color_pair(1)
         self.A_GREEN = curses.color_pair(2)
@@ -204,6 +212,7 @@ class CursesRenderer(BaseRenderer):
         self.columns['pid']['color'] = self.A_YELLOW
         self.columns['priority']['color'] = self.A_GREEN
         self.columns['user']['color'] = self.A_MAGENTA
+        self.columns['disk_total']['color'] = self.A_WHITE | curses.A_BOLD
         self.columns['disk_read']['color'] = self.A_CYAN # | curses.A_BOLD
         self.columns['disk_write']['color'] = self.A_GREEN # | curses.A_BOLD
         self.columns['swapin']['color'] = self.A_YELLOW
@@ -288,10 +297,11 @@ class CursesRenderer(BaseRenderer):
 #            return line
 
         max_lines = self.height - 1 - 1 #  1 for summary and 1 for table header
+        max_lines -= 1 # TODO: off by one error somewhere
 
         for i, process in enumerate(lines[:max_lines]):
             stats = format_stats(self.options, process, duration)
-            io_delay, swapin_delay, read_bytes, write_bytes = stats
+            io_delay, swapin_delay, read_bytes, write_bytes, total_bytes = stats
 
             if Stats.has_blkio_delay_total:
                 delay_stats = '%7s %7s ' % (swapin_delay, io_delay)
@@ -306,6 +316,7 @@ class CursesRenderer(BaseRenderer):
             self.columns['user']['value'] = process.get_user()
             self.columns['disk_read']['value'] = read_bytes
             self.columns['disk_write']['value'] = write_bytes
+            self.columns['disk_total']['value'] = total_bytes
             self.columns['swapin']['value'] = swapin_delay
             self.columns['io']['value'] = io_delay
             self.columns['command']['value'] = process.get_cmdline()
@@ -314,6 +325,7 @@ class CursesRenderer(BaseRenderer):
                 column = self.columns[key]
                 value = str(column['value'])
                 value = value[:column['width']]
+                #log.debug('height = %s row = %s column = %s remaining = %s  len = %s value= %s ' % (self.height, i, key, self.remaining, len(value), value))
                 self._printw(column['justify']('%s' % value, column['width']), column['color'])
                 if column['add_spacer']:
                     self._printw(' ', column['color'])
@@ -438,6 +450,7 @@ class IOTopUI(object):
         (lambda p, s: p.pid, False),
         (lambda p, s: p.ioprio_sort_key(), False),
         (lambda p, s: p.get_user(), False),
+        (lambda p, s: s.read_bytes + s.write_bytes - s.cancelled_write_bytes, True),
         (lambda p, s: s.read_bytes, True),
         (lambda p, s: s.write_bytes - s.cancelled_write_bytes, True),
         (lambda p, s: s.swapin_delay_total, True),
