@@ -27,7 +27,6 @@ import optparse
 import os
 import select
 import signal
-import string
 import sys
 import time
 import logging
@@ -116,6 +115,11 @@ class InvalidIoprioData(Exception): pass
 class BaseRenderer(object):
 
     columns = {
+        'time' : {
+            'title' : 'TIME',
+            'column': 0,
+            'width' : 8,
+        },
         'pid' : {
             'title' : 'PID',
             'column': 1,
@@ -136,8 +140,7 @@ class BaseRenderer(object):
             'title' : 'DISK TOTAL',
             'column': 4,
             'width' : 14,
-            },
-
+        },
         'disk_read' : {
             'title' : 'DISK READ',
             'column': 5,
@@ -163,11 +166,6 @@ class BaseRenderer(object):
             'column': 9,
             'width' : 200,
         },
-#        'time' : {
-#            'title' : 'TIME',
-#            'column': 9,
-#            'width' : 8,
-#        },
     }
 
     def __init__(self, options):
@@ -177,6 +175,9 @@ class BaseRenderer(object):
         self.height = 0
         self.width = 0
 
+
+class HtmlRenderer(BaseRenderer):
+    pass
 
 class CursesRenderer(BaseRenderer):
 
@@ -191,6 +192,7 @@ class CursesRenderer(BaseRenderer):
         self.remaining = self.width
 
     def _init_columns(self):
+        del self.columns['time']
         self.columns['pid']['title'] = 'PID' if self.options.processes else 'TID'
 
     def _init_colors(self):
@@ -437,8 +439,20 @@ class LegacyRenderer(BaseRenderer):
 
 
 class BatchRenderer(BaseRenderer):
-    pass
 
+    def refresh_display(self, first_time, total_read, total_write, duration, lines, sorting_key, sorting_reverse):
+        self._render_summary(total_read, total_write, duration)
+        self._render_table_header(sorting_key, sorting_reverse)
+        self._render_table(lines, duration)
+
+    def _render_summary(self, total_read, total_write, duration):
+        print('TODO: render summary')
+
+    def _render_table_header(self, sorting_key, sorting_reverse):
+        print('TODO: render table header')
+
+    def _render_table(self, lines, duration):
+        print('TODO: render table')
 
 #
 # The UI
@@ -479,10 +493,14 @@ class IOTopUI(object):
                 # This call can fail with misconfigured terminals, for example
                 # TERM=xterm-color. This is harmless
                 pass
+        else:
+            self.win = None
 
         # TODO: window shouldn't be here
         if self.options.use_color:
             self.renderer = CursesRenderer(options, self.win)
+        elif self.options.batch:
+            self.renderer = BatchRenderer(options)
         else:
             self.renderer = LegacyRenderer(options, self.win)
 
@@ -735,7 +753,7 @@ class IOTopUI(object):
 
         def format(p):
             stats = format_stats(self.options, p, self.process_list.duration)
-            io_delay, swapin_delay, read_bytes, write_bytes = stats
+            io_delay, swapin_delay, read_bytes, write_bytes, total_bytes = stats
             if Stats.has_blkio_delay_total:
                 delay_stats = '%7s %7s ' % (swapin_delay, io_delay)
             else:
