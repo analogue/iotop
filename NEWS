@@ -2,6 +2,7 @@
 ~~~
 o Adapt the display to the maximum pid width
 o Include both total and actual disk bandwidth in the summary
+o Conversion to Python 3
 
 0.4.4
 ~~~~~
