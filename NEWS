@@ -1,6 +1,7 @@
 0.5
 ~~~
 o Adapt the display to the maximum pid width
+o Include both total and actual disk bandwidth in the summary
 
 0.4.4
 ~~~~~

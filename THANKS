@@ -45,3 +45,6 @@ Florian Mickler <florian@mickler.org>
 
 Ka-Hing Cheung <kcheung@riverbed.com>
     Contributed code to show custom thread names.
+
+Igor Bazhitov <ibazhitov@parallels.com>
+    Contributed the differentiation between total and actual I/O.
