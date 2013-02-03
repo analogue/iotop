@@ -447,7 +447,8 @@ class IOTopUI(object):
             self.win.erase()
             for i, s in enumerate(summary):
                 self.win.addstr(i, 0, s[:self.width])
-            self.win.hline(len(summary), 0, ord(' ') | curses.A_REVERSE, self.width)
+            self.win.hline(len(summary), 0, ord(' ') | curses.A_REVERSE,
+                           self.width)
             remaining_cols = self.width
             for i in range(len(titles)):
                 attr = curses.A_REVERSE
@@ -472,7 +473,8 @@ class IOTopUI(object):
                 except curses.error:
                     pass
             if status_msg:
-                self.win.insstr(self.height - len(summary), 0, status_msg, curses.A_BOLD)
+                self.win.insstr(self.height - len(summary), 0, status_msg,
+                                curses.A_BOLD)
             self.win.refresh()
 
 def run_iotop_window(win, options):
