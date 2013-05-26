@@ -58,10 +58,12 @@ from iotop import ioprio, vmstat
 from iotop.netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
 from iotop.genetlink import Controller, GeNlMessage
 
+
 class DumpableObject(object):
-    """Base class for all objects that allows easy introspection when printed"""
+    """Base class for objects that allows easy introspection when printed"""
     def __repr__(self):
-        return '%s: %s>' % (str(type(self))[:-1], pprint.pformat(self.__dict__))
+        return '%s: %s>' % (str(type(self))[:-1],
+                            pprint.pformat(self.__dict__))
 
 
 #
@@ -127,6 +129,7 @@ TASKSTATS_TYPE_AGGR_PID = 4
 TASKSTATS_TYPE_PID = 1
 TASKSTATS_TYPE_STATS = 3
 
+
 class TaskStatsNetlink(object):
     # Keep in sync with format_stats() and pinfo.did_some_io()
 
@@ -168,6 +171,7 @@ class TaskStatsNetlink(object):
 # PIDs manipulations
 #
 
+
 def find_uids(options):
     """Build options.uids from options.users by resolving usernames to UIDs"""
     options.uids = []
@@ -208,6 +212,7 @@ def safe_utf8_decode(s):
     except AttributeError:
         return s
 
+
 class ThreadInfo(DumpableObject):
     """Stats for a single thread"""
     def __init__(self, tid, taskstats_connection):
@@ -239,7 +244,7 @@ class ProcessInfo(DumpableObject):
         self.pid = pid
         self.uid = None
         self.user = None
-        self.threads = {} # {tid: ThreadInfo}
+        self.threads = {}  # {tid: ThreadInfo}
         self.stats_delta = Stats.build_all_zero()
         self.stats_accum = Stats.build_all_zero()
         self.stats_accum_timestamp = time.time()
@@ -259,9 +264,9 @@ class ProcessInfo(DumpableObject):
     def get_uid(self):
         if self.uid:
             return self.uid
-        # uid in (None, 0) means either we don't know the UID yet or the process
-        # runs as root so it can change its UID. In both cases it means we have
-        # to find out its current UID.
+        # uid in (None, 0) means either we don't know the UID yet or the
+        # process runs as root so it can change its UID. In both cases it means
+        # we have to find out its current UID.
         try:
             uid = os.stat('/proc/%d' % self.pid)[stat.ST_UID]
         except OSError:
@@ -361,6 +366,7 @@ class ProcessInfo(DumpableObject):
 
         return True
 
+
 class ProcessList(DumpableObject):
     def __init__(self, taskstats_connection, options):
         # {pid: ProcessInfo}
@@ -396,7 +402,8 @@ class ProcessList(DumpableObject):
         for tgid in tgids:
             if '0' <= tgid[0] <= '9':
                 try:
-                    tids.extend(map(int, os.listdir('/proc/' + tgid + '/task')))
+                    tids.extend(map(int,
+                                    os.listdir('/proc/' + tgid + '/task')))
                 except OSError:
                     # The PID went away
                     pass

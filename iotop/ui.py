@@ -42,6 +42,7 @@ from iotop.ioprio import IoprioSetError
 
 UNITS = ['B', 'K', 'M', 'G', 'T', 'P', 'E']
 
+
 def human_size(size):
     if size > 0:
         sign = ''
@@ -52,20 +53,24 @@ def human_size(size):
         return '0.00 B'
 
     expo = int(math.log(size / 2, 2) / 10)
-    return '%s%.2f %s' % (sign, (float(size) / (1 << (10 * expo))), UNITS[expo])
+    return '%s%.2f %s' % (
+        sign, (float(size) / (1 << (10 * expo))), UNITS[expo])
+
 
 def format_size(options, bytes):
     if options.kilobytes:
         return '%.2f K' % (bytes / 1024.0)
     return human_size(bytes)
 
+
 def format_bandwidth(options, size, duration):
     return format_size(options, size and float(size) / duration) + '/s'
+
 
 def format_stats(options, process, duration):
     # Keep in sync with TaskStatsNetlink.members_offsets and
     # IOTopUI.get_data(self)
-    def delay2percent(delay): # delay in ns, duration in s
+    def delay2percent(delay):  # delay in ns, duration in s
         return '%.2f %%' % min(99.99, delay / (duration * 10000000.0))
     if options.accumulated:
         stats = process.stats_accum
@@ -74,7 +79,7 @@ def format_stats(options, process, duration):
     else:
         stats = process.stats_delta
         display_format = lambda size, duration: format_bandwidth(
-                                                        options, size, duration)
+                                                       options, size, duration)
     io_delay = delay2percent(stats.blkio_delay_total)
     swapin_delay = delay2percent(stats.swapin_delay_total)
     read_bytes = display_format(stats.read_bytes, duration)
@@ -82,6 +87,7 @@ def format_stats(options, process, duration):
     written_bytes = max(0, written_bytes)
     write_bytes = display_format(written_bytes, duration)
     return io_delay, swapin_delay, read_bytes, write_bytes
+
 
 def get_max_pid_width():
     try:
@@ -97,15 +103,30 @@ MAX_PID_WIDTH = get_max_pid_width()
 # UI Exceptions
 #
 
-class CancelInput(Exception): pass
-class InvalidInt(Exception): pass
-class InvalidPid(Exception): pass
-class InvalidTid(Exception): pass
-class InvalidIoprioData(Exception): pass
+
+class CancelInput(Exception):
+    pass
+
+
+class InvalidInt(Exception):
+    pass
+
+
+class InvalidPid(Exception):
+    pass
+
+
+class InvalidTid(Exception):
+    pass
+
+
+class InvalidIoprioData(Exception):
+    pass
 
 #
 # The UI
 #
+
 
 class IOTopUI(object):
     # key, reverse
@@ -147,7 +168,7 @@ class IOTopUI(object):
         iterations = 0
         poll = select.poll()
         if not self.options.batch:
-            poll.register(sys.stdin.fileno(), select.POLLIN|select.POLLPRI)
+            poll.register(sys.stdin.fileno(), select.POLLIN | select.POLLPRI)
         while self.options.iterations is None or \
               iterations < self.options.iterations:
             total, actual = self.process_list.refresh_processes()
@@ -204,7 +225,7 @@ class IOTopUI(object):
             raise CancelInput()
         return default
 
-    def prompt_int(self, prompt, default = None, empty_is_cancel = True):
+    def prompt_int(self, prompt, default=None, empty_is_cancel=True):
         inp = self.prompt_str(prompt, default, empty_is_cancel)
         try:
             return int(inp)
@@ -263,7 +284,8 @@ class IOTopUI(object):
                 if key in (curses.KEY_LEFT, ord('l')) and selected > 0:
                     selected -= 1
                     break
-                elif key in (curses.KEY_RIGHT, ord('r')) and selected < set_len:
+                elif (key in (curses.KEY_RIGHT, ord('r')) and
+                      selected < set_len):
                     selected += 1
                     break
                 elif key in (curses.KEY_ENTER, ord('\n'), ord('\r')):
@@ -278,10 +300,11 @@ class IOTopUI(object):
         classes_ret = ['rt', 'be', 'idle']
         if ioprio_class is None:
             ioprio_class = 2
-        inp = self.prompt_set(prompt, classes_prompt, classes_ret, ioprio_class)
+        inp = self.prompt_set(prompt, classes_prompt,
+                              classes_ret, ioprio_class)
         return inp
 
-    def prompt_error(self, error = 'Error!'):
+    def prompt_error(self, error='Error!'):
         self.win.hline(1, 0, ord(' ') | curses.A_NORMAL, self.width)
         self.win.insstr(1, 0, '  %s  ' % error, curses.A_REVERSE)
         self.win.refresh()
@@ -294,12 +317,15 @@ class IOTopUI(object):
     def handle_key(self, key):
         def toggle_accumulated():
             self.options.accumulated ^= True
+
         def toggle_only_io():
             self.options.only ^= True
+
         def toggle_processes():
             self.options.processes ^= True
             self.process_list.clear()
             self.process_list.refresh_processes()
+
         def ionice():
             try:
                 if self.options.processes:
@@ -308,10 +334,10 @@ class IOTopUI(object):
                 else:
                     tid = self.prompt_tid()
                     exec_unit = ThreadInfo(tid,
-                                         self.process_list.taskstats_connection)
+                                        self.process_list.taskstats_connection)
                 ioprio_value = exec_unit.get_ioprio()
                 (ioprio_class, ioprio_data) = \
-                                          ioprio.to_class_and_data(ioprio_value)
+                                         ioprio.to_class_and_data(ioprio_value)
                 ioprio_class = self.prompt_class(ioprio_class)
                 if ioprio_class == 'idle':
                     ioprio_data = 0
@@ -469,7 +495,8 @@ class IOTopUI(object):
             else:
                 status_msg = ('CONFIG_TASK_DELAY_ACCT not enabled in kernel, '
                               'cannot determine SWAPIN and IO %')
-            num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
+            num_lines = min(len(lines),
+                            self.height - 2 - int(bool(status_msg)))
             for i in range(num_lines):
                 try:
                     def print_line(line):
@@ -487,6 +514,7 @@ class IOTopUI(object):
                                 curses.A_BOLD)
             self.win.refresh()
 
+
 def run_iotop_window(win, options):
     if options.batch:
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -499,6 +527,7 @@ def run_iotop_window(win, options):
     process_list = ProcessList(taskstats_connection, options)
     ui = IOTopUI(win, process_list, options)
     ui.run()
+
 
 def run_iotop(options):
     try:
@@ -524,6 +553,7 @@ Please do not file bugs on iotop about this.''', file=sys.stderr)
 #
 # Profiling
 #
+
 
 def _profile(continuation):
     prof_file = 'iotop.prof'
@@ -555,13 +585,14 @@ USAGE = '''%s [OPTIONS]
 
 DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling
 period. SWAPIN and IO are the percentages of time the thread spent respectively
-while swapping in and waiting on I/O more generally. PRIO is the I/O priority at
-which the thread is running (set using the ionice command).
+while swapping in and waiting on I/O more generally. PRIO is the I/O priority
+at which the thread is running (set using the ionice command).
 
 Controls: left and right arrows to change the sorting column, r to invert the
 sorting order, o to toggle the --only option, p to toggle the --processes
 option, a to toggle the --accumulated option, i to change I/O priority, q to
 quit, any other key to force a refresh.''' % sys.argv[0]
+
 
 def main():
     try:
@@ -582,8 +613,9 @@ def main():
                       metavar='SEC', default=1)
     parser.add_option('-p', '--pid', type='int', dest='pids', action='append',
                       help='processes/threads to monitor [all]', metavar='PID')
-    parser.add_option('-u', '--user', type='str', dest='users', action='append',
-                      help='users to monitor [all]', metavar='USER')
+    parser.add_option('-u', '--user', type='str', dest='users',
+                      action='append', help='users to monitor [all]',
+                      metavar='USER')
     parser.add_option('-P', '--processes', action='store_true',
                       dest='processes', default=False,
                       help='only show processes, not all threads')
@@ -618,4 +650,3 @@ def main():
         _profile(safe_main_loop)
     else:
         main_loop()
-

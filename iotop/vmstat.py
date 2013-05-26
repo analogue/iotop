@@ -16,6 +16,7 @@
 #
 # Copyright (c) 2007 Guillaume Chazarain <guichaz@gmail.com>
 
+
 class VmStat(object):
     def __init__(self):
         self.vmstat_file = open('/proc/vmstat')
@@ -43,4 +44,3 @@ class VmStat(object):
         delta = now[0] - self.vmstat[0], now[1] - self.vmstat[1]
         self.vmstat = now
         return delta
-

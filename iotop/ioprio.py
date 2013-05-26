@@ -54,6 +54,7 @@ IOPRIO_SET_ARCH_SYSCALL = [
     ('x86_64*',  '64bit', 251),
 ]
 
+
 def find_ioprio_syscall_number(syscall_list):
     arch = os.uname()[4]
     bits = platform.architecture()[0]
@@ -62,6 +63,7 @@ def find_ioprio_syscall_number(syscall_list):
         if fnmatch.fnmatch(arch, candidate_arch) and \
            fnmatch.fnmatch(bits, candidate_bits):
             return syscall_nr
+
 
 class IoprioSetError(Exception):
     def __init__(self, err):
@@ -86,6 +88,7 @@ IOPRIO_WHO_PROCESS = 1
 IOPRIO_CLASS_SHIFT = 13
 IOPRIO_PRIO_MASK = (1 << IOPRIO_CLASS_SHIFT) - 1
 
+
 def ioprio_value(ioprio_class, ioprio_data):
     try:
         ioprio_class = PRIORITY_CLASSES.index(ioprio_class)
@@ -93,17 +96,21 @@ def ioprio_value(ioprio_class, ioprio_data):
         ioprio_class = PRIORITY_CLASSES.index(None)
     return (ioprio_class << IOPRIO_CLASS_SHIFT) | ioprio_data
 
+
 def ioprio_class(ioprio):
     return PRIORITY_CLASSES[ioprio >> IOPRIO_CLASS_SHIFT]
+
 
 def ioprio_data(ioprio):
     return ioprio & IOPRIO_PRIO_MASK
 
 sched_getscheduler = ctypes_handle.sched_getscheduler
-SCHED_OTHER, SCHED_FIFO, SCHED_RR, SCHED_BATCH, SCHED_ISO, SCHED_IDLE = range(6)
+SCHED_OTHER, SCHED_FIFO, SCHED_RR, SCHED_BATCH, SCHED_ISO, SCHED_IDLE = \
+    range(6)
 
 getpriority = ctypes_handle.getpriority
 PRIO_PROCESS = 0
+
 
 def get_ioprio_from_sched(pid):
     scheduler = sched_getscheduler(pid)
@@ -116,6 +123,7 @@ def get_ioprio_from_sched(pid):
         return 'idle'
     else:
         return 'be/%d' % ioprio_nice
+
 
 def get(pid):
     if __NR_ioprio_get is None:
@@ -132,6 +140,7 @@ def get(pid):
         return prio_class
     return '%s/%d' % (prio_class, ioprio_data(ioprio))
 
+
 def set_ioprio(which, who, ioprio_class, ioprio_data):
     if __NR_ioprio_set is None:
         raise IoprioSetError('No ioprio_set syscall found')
@@ -142,8 +151,10 @@ def set_ioprio(which, who, ioprio_class, ioprio_data):
         try:
             err = ctypes.get_errno()
         except AttributeError:
-            err = 'Unknown error (errno support not available before Python2.6)'
+            err = \
+                'Unknown error (errno support not available before Python2.6)'
         raise IoprioSetError(err)
+
 
 def sort_key(key):
     if key[0] == '?':
@@ -161,6 +172,7 @@ def sort_key(key):
 
     return (1 << (shift * IOPRIO_CLASS_SHIFT)) + prio
 
+
 def to_class_and_data(ioprio_str):
     if '/' in ioprio_str:
         split = ioprio_str.split('/')
@@ -177,4 +189,3 @@ if __name__ == '__main__':
         pid = os.getpid()
     print('pid:', pid)
     print('ioprio:', get(pid))
-
