@@ -472,7 +472,14 @@ class IOTopUI(object):
             num_lines = min(len(lines), self.height - 2 - int(bool(status_msg)))
             for i in range(num_lines):
                 try:
-                    self.win.addstr(i + len(summary) + 1, 0, lines[i])
+                    def print_line(line):
+                        self.win.addstr(i + len(summary) + 1, 0, line)
+                    try:
+                        print_line(lines[i])
+                    except UnicodeEncodeError:
+                        # Python2: 'ascii' codec can't encode character ...
+                        # http://bugs.debian.org/708252
+                        print_line(lines[i].encode('utf-8'))
                 except curses.error:
                     pass
             if status_msg:
