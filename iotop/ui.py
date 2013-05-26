@@ -164,9 +164,12 @@ class IOTopUI(object):
                 events = poll.poll(self.options.delay_seconds * 1000.0)
             except select.error as e:
                 if e.args and e.args[0] == errno.EINTR:
-                    events = 0
+                    events = []
                 else:
                     raise
+            for (fd, event) in events:
+                if event & (select.POLLERR | select.POLLHUP):
+                    sys.exit(1)
             if not self.options.batch:
                 self.resize()
             if events:
