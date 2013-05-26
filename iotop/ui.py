@@ -491,7 +491,10 @@ def run_iotop_window(win, options):
     if options.batch:
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     else:
-        signal.signal(signal.SIGINT, lambda *args, **kwargs: sys.exit(0))
+        def clean_exit(*args, **kwargs):
+            sys.exit(0)
+        signal.signal(signal.SIGINT, clean_exit)
+        signal.signal(signal.SIGTERM, clean_exit)
     taskstats_connection = TaskStatsNetlink(options)
     process_list = ProcessList(taskstats_connection, options)
     ui = IOTopUI(win, process_list, options)
