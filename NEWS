@@ -1,3 +1,10 @@
+0.6
+~~~
+o Clean up the terminal on exit
+o Stop busy looping on exit in certain conditions
+o Restored UTF-8 support with python2
+o Fixed install scripts to install to sbin/ instead of bin/
+
 0.5
 ~~~
 o Adapt the display to the maximum pid width
