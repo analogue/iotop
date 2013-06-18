@@ -7,7 +7,7 @@ from iotop.version import VERSION
 # Dirty hack to make setup.py install the iotop script to sbin/ instead of bin/
 # while still honoring the choice of installing into local/ or not.
 if hasattr(distutils_install, 'INSTALL_SCHEMES'):
-    for d in distutils_install.INSTALL_SCHEMES.itervalues():
+    for d in distutils_install.INSTALL_SCHEMES.values():
         if d.get('scripts', '').endswith('/bin'):
             d['scripts'] = d['scripts'][:-len('/bin')] + '/sbin'
 
