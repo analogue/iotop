@@ -4,5 +4,5 @@ include ChangeLog
 include NEWS
 include README
 include THANKS
-include iotop.1
+include iotop.8
 include iotop.py

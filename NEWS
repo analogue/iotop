@@ -1,6 +1,17 @@
+0.6
+~~~
+o Clean up the terminal on exit
+o Stop busy looping on exit in certain conditions
+o Restored UTF-8 support with python2
+o Fixed install scripts to install to sbin/ instead of bin/
+o Releases are now gpg signed with key "4096R/4D23A27E 2013-05-26"
+
 0.5
 ~~~
 o Adapt the display to the maximum pid width
+o Include both total and actual disk bandwidth in the summary
+o Conversion to Python 3
+o Installation to sbin instead of bin
 
 0.4.4
 ~~~~~

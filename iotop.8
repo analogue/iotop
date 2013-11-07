@@ -15,8 +15,16 @@ options need to be enabled in your Linux kernel build configuration.
 iotop displays columns for the I/O bandwidth read and written by each
 process/thread during the sampling period. It also displays the percentage
 of time the thread/process spent while swapping in and while waiting on I/O. For each process, its I/O priority (class/level) is shown.
+.PP
 In addition, the total I/O bandwidth read and written during the sampling
 period is displayed at the top of the interface.
+\fBTotal DISK READ\fR and \fBTotal DISK WRITE\fR values represent total read
+and write bandwidth between processes and kernel threads on the one side and
+kernel block device subsystem on the other. While \fBActual DISK READ\fR and
+\fBActual DISK WRITE\fR values represent corresponding bandwidths for actual
+disk I/O between kernel block device subsystem and underlying hardware (HDD, SSD, etc.).
+Thus \fBTotal\fR and \fBActual\fR values may not be equal at any given moment of time
+due to data caching and I/O operations reordering that take place inside Linux kernel.
 .PP
 Use the left and right arrows to change the sorting, r to reverse the
 sorting order, o to toggle the \-\-only option, p to toggle the \-\-processes option, a to toggle the \-\-accumulated option, q to quit or i to change the priority of a thread or a process' thread(s). Any other key will force a refresh.

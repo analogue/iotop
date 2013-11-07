@@ -7,4 +7,4 @@ python setup.py install -O1 --root="$RPM_BUILD_ROOT" --record=INSTALLED_FILES
 sed -i -e 's@man/man\([[:digit:]]\)/\(.\+\.[[:digit:]]\)$@man/man\1/\2.gz@g' INSTALLED_FILES
 # actually, it doesn't on all distributions so just compress unconditionally
 # before brp-compress is run
-find "$RPM_BUILD_ROOT" -type f -name iotop.1 -exec gzip '{}' \;
+find "$RPM_BUILD_ROOT" -type f -name iotop.8 -exec gzip '{}' \;

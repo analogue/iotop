@@ -10,7 +10,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 #
 # See the COPYING file for license information.
 #
@@ -31,17 +31,9 @@ import time
 #
 # Check for requirements:
 #   o Linux >= 2.6.20 with I/O accounting and VM event counters
-#   o Python >= 2.5 or Python 2.4 + ctypes
 #
 
 ioaccounting = os.path.exists('/proc/self/io')
-
-try:
-    import ctypes
-except ImportError:
-    has_ctypes = False
-else:
-    has_ctypes = True
 
 try:
     from iotop.vmstat import VmStat
@@ -51,29 +43,27 @@ except:
 else:
     vm_event_counters = True
 
-if not ioaccounting or not has_ctypes or not vm_event_counters:
+if not ioaccounting or not vm_event_counters:
     print('Could not run iotop as some of the requirements are not met:')
-    if not ioaccounting or not vm_event_counters:
-        print('- Linux >= 2.6.20 with')
-        if not ioaccounting:
-            print('  - I/O accounting support ' \
-              '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
-              'CONFIG_TASK_IO_ACCOUNTING)')
-        if not vm_event_counters:
-            print('  - VM event counters (CONFIG_VM_EVENT_COUNTERS)')
-    if not has_ctypes:
-        print('- Python >= 2.5 or Python 2.4 with the ctypes module')
-
+    print('- Linux >= 2.6.20 with')
+    if not ioaccounting:
+        print('  - I/O accounting support ' \
+          '(CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, ' \
+          'CONFIG_TASK_IO_ACCOUNTING)')
+    if not vm_event_counters:
+        print('  - VM event counters (CONFIG_VM_EVENT_COUNTERS)')
     sys.exit(1)
 
 from iotop import ioprio, vmstat
 from iotop.netlink import Connection, NETLINK_GENERIC, U32Attr, NLM_F_REQUEST
 from iotop.genetlink import Controller, GeNlMessage
 
+
 class DumpableObject(object):
-    """Base class for all objects that allows easy introspection when printed"""
+    """Base class for objects that allows easy introspection when printed"""
     def __repr__(self):
-        return '%s: %s>' % (str(type(self))[:-1], pprint.pformat(self.__dict__))
+        return '%s: %s>' % (str(type(self))[:-1],
+                            pprint.pformat(self.__dict__))
 
 
 #
@@ -139,6 +129,7 @@ TASKSTATS_TYPE_AGGR_PID = 4
 TASKSTATS_TYPE_PID = 1
 TASKSTATS_TYPE_STATS = 3
 
+
 class TaskStatsNetlink(object):
     # Keep in sync with format_stats() and pinfo.did_some_io()
 
@@ -180,6 +171,7 @@ class TaskStatsNetlink(object):
 # PIDs manipulations
 #
 
+
 def find_uids(options):
     """Build options.uids from options.users by resolving usernames to UIDs"""
     options.uids = []
@@ -220,6 +212,7 @@ def safe_utf8_decode(s):
     except AttributeError:
         return s
 
+
 class ThreadInfo(DumpableObject):
     """Stats for a single thread"""
     def __init__(self, tid, taskstats_connection):
@@ -251,7 +244,7 @@ class ProcessInfo(DumpableObject):
         self.pid = pid
         self.uid = None
         self.user = None
-        self.threads = {} # {tid: ThreadInfo}
+        self.threads = {}  # {tid: ThreadInfo}
         self.stats_delta = Stats.build_all_zero()
         self.stats_accum = Stats.build_all_zero()
         self.stats_accum_timestamp = time.time()
@@ -271,9 +264,9 @@ class ProcessInfo(DumpableObject):
     def get_uid(self):
         if self.uid:
             return self.uid
-        # uid in (None, 0) means either we don't know the UID yet or the process
-        # runs as root so it can change its UID. In both cases it means we have
-        # to find out its current UID.
+        # uid in (None, 0) means either we don't know the UID yet or the
+        # process runs as root so it can change its UID. In both cases it means
+        # we have to find out its current UID.
         try:
             uid = os.stat('/proc/%d' % self.pid)[stat.ST_UID]
         except OSError:
@@ -356,9 +349,7 @@ class ProcessInfo(DumpableObject):
     def update_stats(self):
         stats_delta = Stats.build_all_zero()
         for tid, thread in self.threads.items():
-            if thread.mark:
-                del self.threads[tid]
-            else:
+            if not thread.mark:
                 stats_delta.accumulate(thread.stats_delta, stats_delta)
         self.threads = dict([(tid, thread) for tid, thread in
                              self.threads.items() if not thread.mark])
@@ -374,6 +365,7 @@ class ProcessInfo(DumpableObject):
         self.stats_accum.accumulate(self.stats_delta, self.stats_accum)
 
         return True
+
 
 class ProcessList(DumpableObject):
     def __init__(self, taskstats_connection, options):
@@ -410,7 +402,8 @@ class ProcessList(DumpableObject):
         for tgid in tgids:
             if '0' <= tgid[0] <= '9':
                 try:
-                    tids.extend(map(int, os.listdir('/proc/' + tgid + '/task')))
+                    tids.extend(map(int,
+                                    os.listdir('/proc/' + tgid + '/task')))
                 except OSError:
                     # The PID went away
                     pass
@@ -435,6 +428,8 @@ class ProcessList(DumpableObject):
         self.duration = new_timestamp - self.timestamp
         self.timestamp = new_timestamp
 
+        total_read = total_write = 0
+
         for tgid in self.list_tgids():
             process = self.get_process(tgid)
             if not process:
@@ -444,9 +439,11 @@ class ProcessList(DumpableObject):
                 stats = self.taskstats_connection.get_single_task_stats(thread)
                 if stats:
                     thread.update_stats(stats)
+                    delta = thread.stats_delta
+                    total_read += delta.read_bytes
+                    total_write += delta.write_bytes
                     thread.mark = False
-
-        return self.vmstat.delta()
+        return (total_read, total_write), self.vmstat.delta()
 
     def refresh_processes(self):
         for process in self.processes.values():
