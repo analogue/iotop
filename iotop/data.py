@@ -452,9 +452,9 @@ class ProcessList(DumpableObject):
 
         total_read_and_write = self.update_process_counts()
 
-        self.processes = dict([(pid, process) for pid, process in
-                               self.processes.items() if
-                               process.update_stats()])
+        for pid, process in self.processes.items():
+            if not process.update_stats():
+                del self.processes[pid]
 
         return total_read_and_write
 
