@@ -386,6 +386,10 @@ class IOTopUI(object):
                 ionice,
             ord('I'):
                 ionice,
+            ord('<'):
+                lambda: self.adjust_sorting_key(-1),
+            ord('>'):
+                lambda: self.adjust_sorting_key(1),
             curses.KEY_LEFT:
                 lambda: self.adjust_sorting_key(-1),
             curses.KEY_RIGHT:
