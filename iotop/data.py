@@ -196,9 +196,11 @@ def find_uids(options):
 def parse_proc_pid_status(pid):
     result_dict = {}
     try:
+        sep = ':\t'
         for line in open('/proc/%d/status' % pid):
-            key, value = line.split(':\t', 1)
-            result_dict[key] = value.strip()
+            if sep in line:
+                key, value = line.split(sep, 1)
+                result_dict[key] = value.strip()
     except IOError:
         pass  # No such process
     return result_dict
